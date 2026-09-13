@@ -6,6 +6,7 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner">
     <StackPanel Margin="24" Spacing="8" HorizontalAlignment="Center">
+        <Image Source="avares://Todo.App/Assets/AppIcon.png" Width="96" Height="96" />
         <TextBlock Text="Todo" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         <TextBlock x:Name="VersionText" HorizontalAlignment="Center" Foreground="Gray" />
         <TextBlock Text="A personal TODO app for one user."

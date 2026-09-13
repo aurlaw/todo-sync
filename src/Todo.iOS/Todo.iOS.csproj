@@ -8,6 +8,14 @@
          fixes in third-party libs; deferred past Phase 1 (simulator-only, no App Store build yet). -->
     <MtouchLink>None</MtouchLink>
     <AppIcon>AppIcon</AppIcon>
+    <!--
+      Ad Hoc device signing (Phase 4). Real values are never set here — they're
+      passed at publish time via scripts/publish-ios.sh's -p:CodesignKey /
+      -p:CodesignProvision / -p:MtouchTeamID MSBuild properties, sourced from
+      the git-ignored scripts/publish.local.env (see scripts/publish.local.env.example).
+      A plain `dotnet build` (simulator) is unaffected — these only apply to
+      `dotnet publish` where they're supplied.
+    -->
   </PropertyGroup>
 
   <ItemGroup>

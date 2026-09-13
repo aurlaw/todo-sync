@@ -25,7 +25,15 @@
       <AppBundleDir>$(OutDir)Todo.app</AppBundleDir>
     </PropertyGroup>
     <ItemGroup>
-      <AppBundleContents Include="$(OutDir)**\*" Exclude="$(OutDir)Todo.app\**\*" />
+      <!--
+        runtimes/browser-wasm/** is irrelevant leftover multi-RID native-asset content (a
+        SkiaSharp/HarfBuzzSharp packaging quirk — their native assets for every platform get
+        copied to the output dir regardless of the actual build target, not filtered to osx).
+        Left in, codesign's deep-sign mode (scripts/publish-macos.sh) fails with "bundle format
+        unrecognized, invalid, or unsuitable" trying to sign it as a nested bundle — it isn't
+        one, so exclude it from the app bundle entirely rather than working around codesign.
+      -->
+      <AppBundleContents Include="$(OutDir)**\*" Exclude="$(OutDir)Todo.app\**\*;$(OutDir)runtimes\browser-wasm\**\*" />
     </ItemGroup>
     <MakeDir Directories="$(AppBundleDir)/Contents/MacOS;$(AppBundleDir)/Contents/Resources" />
     <Copy SourceFiles="Info.plist" DestinationFolder="$(AppBundleDir)/Contents" />

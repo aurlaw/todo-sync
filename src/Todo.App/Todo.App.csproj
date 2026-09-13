@@ -15,4 +15,10 @@
     <ProjectReference Include="../Todo.Core/Todo.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- References the shared master icon directly (CLAUDE.md: never hand-edit/duplicate
+         derived icon files) so the About dialog can show it via avares://Todo.App/Assets/AppIcon.png -->
+    <AvaloniaResource Include="../../_appicon/appIcon_1024.png" Link="Assets/AppIcon.png" />
+  </ItemGroup>
+
 </Project>

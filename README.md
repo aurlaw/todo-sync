@@ -14,8 +14,8 @@ Full design decisions and phased plan: `Tech/todo-sync/project-plan.md` in the O
 | 1 ✅ | iOS head, shared-view split, per-platform secret storage |
 | 2 ✅ | Cloudflare Worker + D1 sync backend — deployed |
 | 3 ✅ | Sync engine (push/pull, conflict handling) |
-| 4 | Reminders (recurrence, notifications) |
-| 5 | Signing + install workflow |
+| 4 | Signing + install workflow |
+| 5 | Reminders (recurrence, notifications) |
 
 ## Prerequisites
 
@@ -37,6 +37,7 @@ todo-sync/
     Todo.Core.Tests/     xunit tests for Core
     Todo.Desktop.Tests/  xunit tests for macOS-only platform code
   worker/            Cloudflare Worker + D1 backend (TypeScript) — push/changes/auth, see below
+  scripts/           dotnet publish + codesign wrappers for signed device installs, see below
 ```
 
 ## Commands
@@ -81,3 +82,25 @@ wrangler d1 migrations apply DB --remote
 wrangler secret put API_TOKEN           # any random high-entropy string, e.g. `openssl rand -hex 32`
 wrangler deploy
 ```
+
+## Publishing (signed device installs)
+
+Signed builds for a real iPhone/Mac, not just the simulator/dev-loop runs above. One-time setup (certs, provisioning profile, device registration — Michael, in the Apple Developer portal / Xcode / Keychain Access) is documented in `Tech/todo-sync/phase-4-signing-install.md` in the vault. Once set up:
+
+```bash
+# One-time: copy the template and fill in your signing identities (git-ignored, never committed)
+cp scripts/publish.local.env.example scripts/publish.local.env
+
+# iOS — signed Ad Hoc .ipa for install via Xcode's Devices window or Apple Configurator
+# Auto-detects TEAM_ID/PROVISION_PROFILE_UUID if the profile is saved at scripts/TodoSync.mobileprovision
+./scripts/publish-ios.sh
+
+# iOS device builds always AOT-compile and can take 10-20+ minutes (LLVM AOT + trimming
+# disabled). For a faster build while just testing install/signing, skip LLVM:
+FAST_BUILD=1 ./scripts/publish-ios.sh
+
+# macOS — signed Todo.app (Developer ID Application cert)
+./scripts/publish-macos.sh
+```
+
+Both scripts fail fast with a clear message if a required signing value is missing from `scripts/publish.local.env`. Neither script touches the Apple Developer portal or Keychain itself — they only wrap `dotnet publish`/`dotnet build`/`codesign` around identities you've already set up.
