@@ -32,4 +32,18 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    private void OnAboutClick(object? sender, EventArgs e)
+    {
+        var owner = (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        var about = new AboutDialog();
+        if (owner is not null)
+        {
+            about.ShowDialog(owner);
+        }
+        else
+        {
+            about.Show();
+        }
+    }
 }
