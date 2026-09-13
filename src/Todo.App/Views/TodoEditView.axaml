@@ -4,7 +4,8 @@
              x:Class="Todo.App.Views.TodoEditView"
              x:DataType="vm:TodoEditDialogViewModel"
              Width="320">
-    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+    <Border Background="{DynamicResource DialogBackgroundBrush}"
+            BorderBrush="{DynamicResource DialogBorderBrush}" BorderThickness="1"
             Padding="16" CornerRadius="8" BoxShadow="0 4 16 0 #40000000">
         <StackPanel Spacing="10">
             <TextBlock Text="Title" />

@@ -26,6 +26,9 @@ public partial class App : Application
             : new Uri("avares://Todo.App/Styles/IosButtonTheme.axaml");
 
         Resources.MergedDictionaries.Add((IResourceDictionary)AvaloniaXamlLoader.Load(themeUri));
+
+        var dialogThemeUri = new Uri("avares://Todo.App/Styles/DialogTheme.axaml");
+        Resources.MergedDictionaries.Add((IResourceDictionary)AvaloniaXamlLoader.Load(dialogThemeUri));
     }
 
     public override void OnFrameworkInitializationCompleted()

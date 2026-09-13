@@ -6,7 +6,8 @@
              x:DataType="vm:SettingsViewModel"
              Width="320"
              Loaded="OnLoaded">
-    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+    <Border Background="{DynamicResource DialogBackgroundBrush}"
+            BorderBrush="{DynamicResource DialogBorderBrush}" BorderThickness="1"
             Padding="16" CornerRadius="8" BoxShadow="0 4 16 0 #40000000">
         <StackPanel Spacing="10">
             <TextBlock Text="Settings" FontWeight="SemiBold" />

@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        Explicit, theme-aware dialog card colors — used instead of Fluent's internal
+        SystemControl*-style resource keys, which aren't documented/stable API (grepping the
+        compiled Avalonia.Themes.Fluent.dll for names like ButtonBackground turned up nothing, so
+        whether SystemControlBackgroundAltHighBrush resolves to anything sensible in this version
+        is unverified — it was flagged as a risk when platform button theming was added, and this
+        is that risk materializing as a real, reported contrast problem on macOS).
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DialogBackgroundBrush">#FFFFFFFF</SolidColorBrush>
+            <SolidColorBrush x:Key="DialogBorderBrush">#33000000</SolidColorBrush>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DialogBackgroundBrush">#FF2C2C2E</SolidColorBrush>
+            <SolidColorBrush x:Key="DialogBorderBrush">#40FFFFFF</SolidColorBrush>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

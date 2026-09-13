@@ -5,23 +5,47 @@
         ControlTheme (template + focus/disabled visuals kept; only chrome overridden).
         Deliberately uses literal brushes rather than Fluent's internal resource keys,
         since those aren't part of Avalonia's documented/stable API surface.
+
+        Theme-aware via ThemeDictionaries: a gray tint that's barely visible in light mode is
+        essentially invisible against a near-black dark-mode window background — confirmed as a
+        real contrast problem by Michael. Dark mode needs a *lighter*-than-background tint (white-
+        based translucency), not the same gray-on-anything used for light mode.
     -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="MacButtonBackgroundBrush">#14000000</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBackgroundHoverBrush">#26000000</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBackgroundPressedBrush">#33000000</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderBrush">#33000000</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderHoverBrush">#40000000</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderPressedBrush">#4d000000</SolidColorBrush>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="MacButtonBackgroundBrush">#1fffffff</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBackgroundHoverBrush">#33ffffff</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBackgroundPressedBrush">#40ffffff</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderBrush">#40ffffff</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderHoverBrush">#4dffffff</SolidColorBrush>
+            <SolidColorBrush x:Key="MacButtonBorderPressedBrush">#59ffffff</SolidColorBrush>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
     <ControlTheme x:Key="PlatformButtonTheme" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Padding" Value="12,4" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="#33808080" />
-        <Setter Property="Background" Value="#14808080" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MacButtonBorderBrush}" />
+        <Setter Property="Background" Value="{DynamicResource MacButtonBackgroundBrush}" />
 
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#26808080" />
-            <Setter Property="BorderBrush" Value="#40808080" />
+            <Setter Property="Background" Value="{DynamicResource MacButtonBackgroundHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MacButtonBorderHoverBrush}" />
         </Style>
 
         <Style Selector="^:pressed">
-            <Setter Property="Background" Value="#33808080" />
-            <Setter Property="BorderBrush" Value="#4d808080" />
+            <Setter Property="Background" Value="{DynamicResource MacButtonBackgroundPressedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MacButtonBorderPressedBrush}" />
         </Style>
     </ControlTheme>
 </ResourceDictionary>
