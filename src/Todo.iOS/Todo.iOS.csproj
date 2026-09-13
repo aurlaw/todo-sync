@@ -7,6 +7,7 @@
     <!-- Trimming needs JsonSerializerContext source-gen for RecurrenceRule plus annotation
          fixes in third-party libs; deferred past Phase 1 (simulator-only, no App Store build yet). -->
     <MtouchLink>None</MtouchLink>
+    <AppIcon>AppIcon</AppIcon>
   </PropertyGroup>
 
   <ItemGroup>

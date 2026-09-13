@@ -48,8 +48,11 @@ dotnet build Todo.slnx
 dotnet test tests/Todo.Core.Tests
 dotnet test tests/Todo.Desktop.Tests
 
-# Run the macOS app
+# Run the macOS app (fast dev loop — no app bundle, generic Dock icon)
 dotnet build src/Todo.Desktop && dotnet run --project src/Todo.Desktop
+
+# Run the macOS app as a real .app bundle (shows the actual Dock icon)
+dotnet build src/Todo.Desktop && open src/Todo.Desktop/bin/Debug/net10.0/Todo.app
 
 # Build + launch the iOS app on a simulator (find a udid via `xcrun simctl list devices`)
 dotnet build src/Todo.iOS/Todo.iOS.csproj -t:Run -p:_DeviceName=":v2:udid=<simulator-udid>"

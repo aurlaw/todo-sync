@@ -14,4 +14,23 @@
     <ProjectReference Include="../Todo.Core/Todo.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    .NET has no built-in macOS app-bundle project type outside Mac Catalyst (out of scope here).
+    Assemble a minimal Todo.app next to the build output so Info.plist/CFBundleIconFile is honored
+    (Dock/Finder icon, launched via `open`). `dotnet run`/plain executable launches skip this bundle
+    and show the generic terminal icon, which is expected.
+  -->
+  <Target Name="CreateMacOSAppBundle" AfterTargets="Build" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PropertyGroup>
+      <AppBundleDir>$(OutDir)Todo.app</AppBundleDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <AppBundleContents Include="$(OutDir)**\*" Exclude="$(OutDir)Todo.app\**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(AppBundleDir)/Contents/MacOS;$(AppBundleDir)/Contents/Resources" />
+    <Copy SourceFiles="Info.plist" DestinationFolder="$(AppBundleDir)/Contents" />
+    <Copy SourceFiles="../../_appicon/AppIcon.icns" DestinationFolder="$(AppBundleDir)/Contents/Resources" />
+    <Copy SourceFiles="@(AppBundleContents)" DestinationFolder="$(AppBundleDir)/Contents/MacOS/%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>
