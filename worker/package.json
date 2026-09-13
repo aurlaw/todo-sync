@@ -1,0 +1,24 @@
+{
+  "name": "todo-sync-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "types": "wrangler types",
+    "predev": "npm run types",
+    "dev": "wrangler dev",
+    "pretest": "npm run types",
+    "test": "vitest run",
+    "pretypecheck": "npm run types",
+    "typecheck": "tsc --noEmit",
+    "migrate:local": "wrangler d1 migrations apply DB --local",
+    "migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.1.8",
+    "@types/node": "24.13.4",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.131.1"
+  }
+}

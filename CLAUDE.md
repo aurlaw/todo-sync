@@ -36,7 +36,7 @@ todo-sync/
     Todo.Core.Tests/     xunit — repository, sync engine, recurrence.
     Todo.Desktop.Tests/  xunit — macOS-only platform code (e.g. MacFileSecretStore).
   worker/
-    src/index.ts, schema.sql, wrangler.toml, package.json
+    src/index.ts, src/{auth,push,changes,types}.ts, migrations/0001_init.sql, wrangler.toml, package.json
 ```
 
 ## Engineering rules
@@ -59,6 +59,7 @@ todo-sync/
 
 ## Sync protocol (summary)
 
+- **Deployed Worker base URL: `https://todo-sync-worker.aurlaw.dev`** (custom domain, not the default `*.workers.dev` URL). This is what Phase 3's `ISyncClient` implementation points at.
 - Last-write-wins on `UpdatedAt`. Worker assigns a monotonic `server_seq` on every accepted write.
 - Client: `POST /push` (dirty rows) → `GET /changes?since=<cursor>` → apply rows newer than local → clear `Dirty` → persist cursor.
 - `/push` is idempotent: upsert by id, accept only if incoming `UpdatedAt` > stored.
@@ -80,7 +81,11 @@ dotnet build src/Todo.Desktop && dotnet run --project src/Todo.Desktop
 dotnet build src/Todo.iOS -f net10.0-ios          # simulator/device builds — Michael runs, Claude may build to verify compile
 dotnet build src/Todo.iOS/Todo.iOS.csproj -t:Run -p:_DeviceName=":v2:udid=<simulator-udid>"   # build+launch on a booted/bootable simulator (find udid via `xcrun simctl list devices`)
 cd worker && npm install && npm test
+cd worker && npm run typecheck
+cd worker && npx wrangler d1 migrations apply DB --local   # sanity-checks migrations/*.sql outside the test harness, no account needed
 ```
+
+Michael-only, account-touching (never run by Claude): `wrangler d1 create todo-sync` (paste the returned `database_id` into `worker/wrangler.toml`), `wrangler d1 migrations apply DB --remote`, `wrangler secret put API_TOKEN`, `wrangler deploy`.
 
 ## Gotchas
 
@@ -88,7 +93,10 @@ cd worker && npm install && npm test
 - `.NET 8` mobile workloads are gone from the .NET 10 SDK; everything mobile is `net10.0-ios`.
 - Central Package Management is on: add versions in `Directory.Packages.props`, not in `.csproj` files.
 - SQLite `DateTimeOffset` has no native type — store as ISO 8601 TEXT and parse with `DateTimeOffset.Parse(…, CultureInfo.InvariantCulture)`.
-- D1 has no `RETURNING` guarantees across batches — read `server_seq` from the `meta` table in the same transaction rather than relying on `last_insert_rowid`.
+- D1 has no `RETURNING` guarantees across batches — read `server_seq` from the `meta` table in the same transaction rather than relying on `last_insert_rowid`. Concretely (`worker/src/push.ts`): `db.batch()` runs a pre-built array of already-bound statements atomically, but a later statement can't use a value computed by an earlier one in the same batch — so `server_seq` assignment is **one single-statement `UPDATE meta SET value = value + 1 WHERE key = 'max_server_seq' RETURNING value`** per row (RETURNING is reliable for a single statement), followed by a separate `INSERT ... ON CONFLICT DO UPDATE ... WHERE excluded.updated_at > todos.updated_at` upsert using that value. A rejected (stale) push still consumes a sequence number — a harmless gap, not a bug.
+- Worker JSON wire contract is **camelCase** (`worker/src/types.ts`'s `TodoDto`), which matches neither D1's snake_case columns nor the client's default PascalCase `System.Text.Json` output (`SqliteTodoRepository.cs` serializes `RecurrenceRule` with zero custom converters — PascalCase properties, integer enums). The Worker treats `recurrence` as an **opaque JSON string**, never parsing it. **Phase 3's .NET sync client will need explicit `[JsonPropertyName]` camelCase mapping** to match this contract — not handled yet.
+- Worker testing uses `@cloudflare/vitest-plugin` (not the older `@cloudflare/vitest-pool-workers` — confirmed via Cloudflare's current docs) via `cloudflareTest()` in `worker/vitest.config.ts`, migrations applied in `worker/test/apply-migrations.ts` using `applyD1Migrations` from `cloudflare:test` + `env`/`exports` from `cloudflare:workers` (`exports.default.fetch(...)` calls the actual Worker). Runs fully locally against a real D1 instance — no Cloudflare account/login needed for `npm test`.
+- `wrangler types` (run via `npm run types`, wired as a `pre`-hook on `dev`/`test`/`typecheck`) now generates a full runtime type library into `worker/worker-configuration.d.ts` and **supersedes `@cloudflare/workers-types`** (Wrangler prints this exact guidance) — don't reinstall that package. The generated file is gitignored (regenerated on demand, depends on `wrangler.toml`) and must be added to `tsconfig.json`'s `include` for the ambient `Env`/`cloudflare:workers` `Exports` types to resolve. Secrets (`API_TOKEN`) never appear in it since `wrangler types` only reflects `wrangler.toml`, not `wrangler secret put` values — hence the hand-written `Env` interface in `worker/src/types.ts` includes `API_TOKEN` itself, and test files cast `env` to a local `TestEnv` type for the test-only `TEST_MIGRATIONS` binding.
 - Never put real-looking tokens in tests, fixtures, or this file. Construct test secrets at runtime.
 - Building the `AppBuilder` by hand (not via `UsePlatformDetect()`, needed here since the composition root has to inject `MainViewModel` via `AppBuilder.Configure(() => new App(...))`) means text rendering isn't wired automatically: call `.UseSkia().UseHarfBuzz()` in addition to the windowing backend (`.UseAvaloniaNative()` on macOS), or the app throws `InvalidOperationException: No text shaping system configured` on startup. `Avalonia.HarfBuzz` comes transitively via `Avalonia.Native`/`Avalonia.Desktop`, no extra package reference needed.
 - The root namespace is `Todo`, and `Todo.App` is both a project/namespace and contains a class named `App`. Referencing `Todo.App.App` from another `Todo.*` namespace (e.g. `Todo.Desktop`) needs a `using AvaloniaApp = Todo.App.App;` alias — an unqualified `using Todo.App;` plus `new App(...)` resolves `App` to the namespace, not the class (CS0118).

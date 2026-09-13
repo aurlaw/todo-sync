@@ -1,0 +1,9 @@
+name = "todo-sync-worker"
+main = "src/index.ts"
+compatibility_date = "2026-09-13"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "todo-sync"
+database_id = "e52a3681-3bca-4d8e-864f-8689382d104a"
+migrations_dir = "migrations"

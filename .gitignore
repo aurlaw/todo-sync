@@ -55,3 +55,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Cloudflare Worker (worker/)
+worker/node_modules/
+worker/.wrangler/
+worker/dist/
+worker/.dev.vars
+worker/worker-configuration.d.ts
