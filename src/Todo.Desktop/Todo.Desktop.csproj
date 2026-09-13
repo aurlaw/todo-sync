@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Native" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Todo.App/Todo.App.csproj" />
+    <ProjectReference Include="../Todo.Core/Todo.Core.csproj" />
+  </ItemGroup>
+
+</Project>
