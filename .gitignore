@@ -66,3 +66,4 @@ worker/worker-configuration.d.ts
 # Local signing config (scripts/), real values never committed
 scripts/publish.local.env
 scripts/TodoSync.mobileprovision
+worker/token.dev
