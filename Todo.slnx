@@ -3,8 +3,10 @@
     <Project Path="src/Todo.App/Todo.App.csproj" />
     <Project Path="src/Todo.Core/Todo.Core.csproj" />
     <Project Path="src/Todo.Desktop/Todo.Desktop.csproj" />
+    <Project Path="src/Todo.iOS/Todo.iOS.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Todo.Core.Tests/Todo.Core.Tests.csproj" />
+    <Project Path="tests/Todo.Desktop.Tests/Todo.Desktop.Tests.csproj" />
   </Folder>
 </Solution>

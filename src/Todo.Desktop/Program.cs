@@ -23,7 +23,7 @@ internal static class Program
     }
 
     private static AppBuilder BuildAvaloniaApp(MainViewModel mainViewModel) =>
-        AppBuilder.Configure(() => new AvaloniaApp(mainViewModel))
+        AppBuilder.Configure(() => new AvaloniaApp { MainViewModel = mainViewModel })
             .UseSkia()
             .UseHarfBuzz()
             .UseAvaloniaNative()

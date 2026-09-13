@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>13.0</SupportedOSPlatformVersion>
+    <!-- Trimming needs JsonSerializerContext source-gen for RecurrenceRule plus annotation
+         fixes in third-party libs; deferred past Phase 1 (simulator-only, no App Store build yet). -->
+    <MtouchLink>None</MtouchLink>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.iOS" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Todo.App/Todo.App.csproj" />
+    <ProjectReference Include="../Todo.Core/Todo.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -8,12 +8,13 @@ namespace Todo.App;
 
 public partial class App : Application
 {
-    private readonly MainViewModel _mainViewModel;
-
-    public App(MainViewModel mainViewModel)
-    {
-        _mainViewModel = mainViewModel;
-    }
+    /// <summary>
+    /// Set by each platform head's composition root before this instance is used. A settable
+    /// property (rather than constructor injection) because iOS's <c>AvaloniaAppDelegate&lt;TApp&gt;</c>
+    /// requires <c>TApp : new()</c> — and a type with <c>required</c> members can't satisfy that
+    /// constraint (CS9040), so this can't be <c>required</c> either.
+    /// </summary>
+    public MainViewModel MainViewModel { get; init; } = null!;
 
     public override void Initialize()
     {
@@ -26,7 +27,14 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = _mainViewModel,
+                DataContext = MainViewModel,
+            };
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        {
+            singleView.MainView = new MainView
+            {
+                DataContext = MainViewModel,
             };
         }
 

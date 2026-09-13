@@ -33,7 +33,8 @@ todo-sync/
     Todo.Desktop/      net10.0 — macOS entry point, platform service implementations.
     Todo.iOS/          net10.0-ios — iOS entry point, platform service implementations.
   tests/
-    Todo.Core.Tests/   xunit — repository, sync engine, recurrence.
+    Todo.Core.Tests/     xunit — repository, sync engine, recurrence.
+    Todo.Desktop.Tests/  xunit — macOS-only platform code (e.g. MacFileSecretStore).
   worker/
     src/index.ts, schema.sql, wrangler.toml, package.json
 ```
@@ -77,6 +78,7 @@ dotnet build Todo.slnx
 dotnet test tests/Todo.Core.Tests
 dotnet build src/Todo.Desktop && dotnet run --project src/Todo.Desktop
 dotnet build src/Todo.iOS -f net10.0-ios          # simulator/device builds — Michael runs, Claude may build to verify compile
+dotnet build src/Todo.iOS/Todo.iOS.csproj -t:Run -p:_DeviceName=":v2:udid=<simulator-udid>"   # build+launch on a booted/bootable simulator (find udid via `xcrun simctl list devices`)
 cd worker && npm install && npm test
 ```
 
@@ -90,3 +92,7 @@ cd worker && npm install && npm test
 - Never put real-looking tokens in tests, fixtures, or this file. Construct test secrets at runtime.
 - Building the `AppBuilder` by hand (not via `UsePlatformDetect()`, needed here since the composition root has to inject `MainViewModel` via `AppBuilder.Configure(() => new App(...))`) means text rendering isn't wired automatically: call `.UseSkia().UseHarfBuzz()` in addition to the windowing backend (`.UseAvaloniaNative()` on macOS), or the app throws `InvalidOperationException: No text shaping system configured` on startup. `Avalonia.HarfBuzz` comes transitively via `Avalonia.Native`/`Avalonia.Desktop`, no extra package reference needed.
 - The root namespace is `Todo`, and `Todo.App` is both a project/namespace and contains a class named `App`. Referencing `Todo.App.App` from another `Todo.*` namespace (e.g. `Todo.Desktop`) needs a `using AvaloniaApp = Todo.App.App;` alias — an unqualified `using Todo.App;` plus `new App(...)` resolves `App` to the namespace, not the class (CS0118).
+- `Avalonia.iOS`'s `AvaloniaAppDelegate<TApp>` constrains `where TApp : Application, new()`, and a type with `required` members can't satisfy `new()` (CS9040) — so `App`'s platform-injected `MainViewModel` property is a plain (non-`required`) settable property, not constructor-injected. To actually inject it, override `CreateAppBuilder()` (not `CustomizeAppBuilder`) in the iOS `AppDelegate` and use `AppBuilder.Configure(() => new App { MainViewModel = ... })` — same factory pattern `Todo.Desktop`'s `Program.cs` already uses, since `AvaloniaAppDelegate<TApp>`'s default `CreateAppBuilder` calls `AppBuilder.Configure<TApp>()` (parameterless-only).
+- iOS builds always run through IL linking, even for `dotnet build`/simulator/Debug — `PublishTrimmed=false` is rejected outright ("iOS projects must build with PublishTrimmed=true"); use `<MtouchLink>None</MtouchLink>` in `Todo.iOS.csproj` to disable trimming instead. Revisit before any App Store build (needs a `JsonSerializerContext` for `RecurrenceRule`'s JSON column to be trim-safe).
+- `ISingleViewApplicationLifetime.MainView` (iOS) is the mobile analog of `IClassicDesktopStyleApplicationLifetime.MainWindow` (desktop) in `App.axaml.cs`'s `OnFrameworkInitializationCompleted`. **`Window` has no platform implementation at all on iOS's single-view host** — not just `ShowDialog<T>`'s owner requirement, but even a plain, non-modal `Window.Show()` throws (confirmed by an actual crash log: an unhandled managed exception inside `Avalonia_iOS_DispatcherImpl_CheckSignaled`, thrown from the "New" button's click handler). The edit dialog (`TodoEditDialogViewModel` + `TodoEditView`, a `UserControl`) is therefore shown as an in-view overlay driven by `MainViewModel.ActiveDialog` (an implicit `DataTemplate` in `MainView.axaml` maps it to `TodoEditView`, shown/hidden via an `IsVisible` binding), not a separate `Window`, on both platforms. Don't reach for `Window`/`ShowDialog` for any future dialog in this app — it doesn't work on iOS at all.
+- Real device Keychain entitlements (`keychain-access-groups` etc.) aren't set up yet — `IosKeychainSecretStore` is unverified beyond compiling; simulator generic-password Keychain access typically doesn't need special entitlements, but confirm when Phase 3 actually exercises it.
