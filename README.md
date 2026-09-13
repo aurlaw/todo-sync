@@ -6,14 +6,14 @@ Full design decisions and phased plan: `Tech/todo-sync/project-plan.md` in the O
 
 ## Status
 
-**Phase 2** is implemented and deployed: a Cloudflare Worker + D1 backend (`worker/`) with `POST /push` (idempotent, last-write-wins upsert) and `GET /changes?since=` (cursor-based pull), bearer-token auth. The .NET client doesn't talk to it yet — that's Phase 3 (`ISyncClient`/`SyncEngine`). No client-side sync, no reminders yet — see the phase table below.
+**Phase 3** is implemented: the .NET client now syncs against the deployed Worker — `SyncEngine` pushes dirty rows and pulls `/changes` on app start and after a debounced local edit, with a minimal in-app Settings overlay to paste the bearer token (nothing did that before). Sync-on-foreground was deliberately dropped (Avalonia's foreground-detection API is confirmed broken on both macOS and iOS); reminders are still ahead — see the phase table below.
 
 | Phase | Scope |
 |---|---|
 | 0 ✅ | Solution scaffold, Core models, SQLite repo, macOS head (list/add/edit/complete/delete) |
 | 1 ✅ | iOS head, shared-view split, per-platform secret storage |
 | 2 ✅ | Cloudflare Worker + D1 sync backend — deployed |
-| 3 | Sync engine (push/pull, conflict handling) |
+| 3 ✅ | Sync engine (push/pull, conflict handling) |
 | 4 | Reminders (recurrence, notifications) |
 | 5 | Signing + install workflow |
 
@@ -29,8 +29,8 @@ Full design decisions and phased plan: `Tech/todo-sync/project-plan.md` in the O
 todo-sync/
   Todo.slnx
   src/
-    Todo.Core/       models, ITodoRepository, ISecretStore, SqliteTodoRepository — no Avalonia references
-    Todo.App/         shared Avalonia UI (MainView + dialogs, view models)
+    Todo.Core/       models, ITodoRepository, ISecretStore, ISyncClient/HttpSyncClient, SyncEngine, SqliteTodoRepository — no Avalonia references
+    Todo.App/         shared Avalonia UI (MainView, TodoEditView, SettingsView, view models)
     Todo.Desktop/     macOS entry point, MacFileSecretStore
     Todo.iOS/         iOS entry point, IosKeychainSecretStore
   tests/
@@ -60,6 +60,8 @@ dotnet build src/Todo.iOS/Todo.iOS.csproj -t:Run -p:_DeviceName=":v2:udid=<simul
 ```
 
 The macOS app stores its SQLite database at `~/Library/Application Support/todo-sync/todo.db`; the iOS app stores it in its sandboxed Documents directory.
+
+Sync is inert until a bearer token is set via the app's **Settings** button (paste the same value you gave `wrangler secret put API_TOKEN` below) — without one, the app works fully offline and just silently skips syncing.
 
 ### Worker (`worker/`)
 

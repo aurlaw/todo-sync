@@ -131,4 +131,148 @@ public sealed class SqliteTodoRepositoryTests : IDisposable
         Assert.Equal(RecurrenceFrequency.Weekly, stored.Recurrence!.Frequency);
         Assert.Equal([DayOfWeek.Monday, DayOfWeek.Thursday], stored.Recurrence.DaysOfWeek);
     }
+
+    [Fact]
+    public async Task GetDirtyAsync_returns_only_dirty_rows_including_deleted()
+    {
+        var dirty = NewItem("Dirty");
+        var deletedDirty = NewItem("Deleted but dirty");
+        await _repository.AddAsync(dirty);
+        await _repository.AddAsync(deletedDirty);
+        await _repository.DeleteAsync(deletedDirty.Id);
+
+        var clean = NewItem("Clean");
+        var addedClean = (await _repository.AddAsync(clean)).Value;
+        await _repository.ClearDirtyAsync([addedClean.Id]);
+
+        var result = await _repository.GetDirtyAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(
+            new[] { "Dirty", "Deleted but dirty" }.OrderBy(t => t),
+            result.Value.Select(i => i.Title).OrderBy(t => t));
+    }
+
+    [Fact]
+    public async Task ClearDirtyAsync_clears_only_given_ids()
+    {
+        var a = (await _repository.AddAsync(NewItem("A"))).Value;
+        var b = (await _repository.AddAsync(NewItem("B"))).Value;
+
+        var result = await _repository.ClearDirtyAsync([a.Id]);
+        var dirty = await _repository.GetDirtyAsync();
+
+        Assert.True(result.IsSuccess);
+        var remaining = Assert.Single(dirty.Value);
+        Assert.Equal(b.Id, remaining.Id);
+    }
+
+    [Fact]
+    public async Task ClearDirtyAsync_with_no_ids_is_a_noop()
+    {
+        var result = await _repository.ClearDirtyAsync([]);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task ApplyRemoteAsync_inserts_new_item_without_marking_dirty()
+    {
+        var remote = new TodoItem
+        {
+            Id = Guid.NewGuid(),
+            Title = "From server",
+            CreatedAt = _clock.UtcNow,
+            UpdatedAt = _clock.UtcNow,
+            ServerSeq = 7,
+        };
+
+        var result = await _repository.ApplyRemoteAsync(remote);
+        var active = await _repository.GetActiveAsync();
+
+        Assert.True(result.IsSuccess);
+        var stored = Assert.Single(active.Value);
+        Assert.Equal("From server", stored.Title);
+        Assert.False(stored.Dirty);
+        Assert.Equal(7, stored.ServerSeq);
+    }
+
+    [Fact]
+    public async Task ApplyRemoteAsync_applies_a_newer_update()
+    {
+        var id = Guid.NewGuid();
+        var older = new TodoItem { Id = id, Title = "Old", CreatedAt = _clock.UtcNow, UpdatedAt = _clock.UtcNow, ServerSeq = 1 };
+        await _repository.ApplyRemoteAsync(older);
+
+        var newer = new TodoItem
+        {
+            Id = id,
+            Title = "New",
+            CreatedAt = _clock.UtcNow,
+            UpdatedAt = _clock.UtcNow.AddMinutes(1),
+            ServerSeq = 2,
+        };
+        var result = await _repository.ApplyRemoteAsync(newer);
+
+        var active = await _repository.GetActiveAsync();
+        var stored = Assert.Single(active.Value);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("New", stored.Title);
+        Assert.Equal(2, stored.ServerSeq);
+    }
+
+    [Fact]
+    public async Task ApplyRemoteAsync_rejects_a_stale_update_as_a_noop()
+    {
+        var id = Guid.NewGuid();
+        var newer = new TodoItem { Id = id, Title = "New", CreatedAt = _clock.UtcNow, UpdatedAt = _clock.UtcNow.AddMinutes(1), ServerSeq = 2 };
+        await _repository.ApplyRemoteAsync(newer);
+
+        var stale = new TodoItem { Id = id, Title = "Stale", CreatedAt = _clock.UtcNow, UpdatedAt = _clock.UtcNow, ServerSeq = 1 };
+        var result = await _repository.ApplyRemoteAsync(stale);
+
+        var active = await _repository.GetActiveAsync();
+        var stored = Assert.Single(active.Value);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("New", stored.Title);
+    }
+
+    [Fact]
+    public async Task ApplyRemoteAsync_can_soft_delete_a_local_item()
+    {
+        var id = Guid.NewGuid();
+        var existing = new TodoItem { Id = id, Title = "Local", CreatedAt = _clock.UtcNow, UpdatedAt = _clock.UtcNow };
+        await _repository.ApplyRemoteAsync(existing);
+
+        var deleted = new TodoItem
+        {
+            Id = id,
+            Title = "Local",
+            CreatedAt = _clock.UtcNow,
+            UpdatedAt = _clock.UtcNow.AddMinutes(1),
+            IsDeleted = true,
+        };
+        await _repository.ApplyRemoteAsync(deleted);
+
+        var active = await _repository.GetActiveAsync();
+        Assert.Empty(active.Value);
+    }
+
+    [Fact]
+    public async Task Sync_cursor_defaults_to_zero_and_round_trips()
+    {
+        var initial = await _repository.GetSyncCursorAsync();
+        Assert.True(initial.IsSuccess);
+        Assert.Equal(0, initial.Value);
+
+        await _repository.SetSyncCursorAsync(42);
+        var updated = await _repository.GetSyncCursorAsync();
+
+        Assert.Equal(42, updated.Value);
+
+        await _repository.SetSyncCursorAsync(99);
+        var overwritten = await _repository.GetSyncCursorAsync();
+
+        Assert.Equal(99, overwritten.Value);
+    }
 }

@@ -10,12 +10,16 @@
         <DataTemplate DataType="vm:TodoEditDialogViewModel">
             <views:TodoEditView />
         </DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel">
+            <views:SettingsView />
+        </DataTemplate>
     </UserControl.DataTemplates>
 
     <Panel>
         <DockPanel Margin="12">
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
                 <Button Content="New" Click="OnNewClick" Theme="{DynamicResource PlatformButtonTheme}" />
+                <Button Content="Settings" Click="OnSettingsClick" Theme="{DynamicResource PlatformButtonTheme}" />
                 <TextBlock Text="{Binding StatusMessage}" Foreground="Red" VerticalAlignment="Center" />
             </StackPanel>
             <ScrollViewer>

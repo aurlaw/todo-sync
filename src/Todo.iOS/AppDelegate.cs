@@ -20,7 +20,17 @@ public partial class AppDelegate : AvaloniaAppDelegate<AvaloniaApp>
             Environment.GetFolderPath(Environment.SpecialFolder.Personal),
             "todo.db");
         var repository = new SqliteTodoRepository(databasePath, clock);
-        var mainViewModel = new MainViewModel(repository);
+
+        var secretStore = new IosKeychainSecretStore();
+
+        // No BaseAddress here — HttpSyncClient resolves the base URL itself (from ISecretStore,
+        // falling back to SyncSettings.DefaultBaseUrl), the same way it resolves the bearer token,
+        // so Settings can change it at runtime without a restart.
+        var httpClient = new HttpClient();
+        var syncClient = new HttpSyncClient(httpClient, secretStore);
+        var syncEngine = new SyncEngine(repository, syncClient);
+
+        var mainViewModel = new MainViewModel(repository, syncEngine, secretStore);
 
         return AppBuilder.Configure(() => new AvaloniaApp { MainViewModel = mainViewModel })
             .UseiOS(this)

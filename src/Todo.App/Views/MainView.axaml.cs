@@ -16,11 +16,17 @@ public partial class MainView : UserControl
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         await ViewModel.LoadAsync();
+        _ = ViewModel.SyncNowAsync();
     }
 
     private void OnNewClick(object? sender, RoutedEventArgs e)
     {
         ViewModel.OpenNewCommand.Execute(null);
+    }
+
+    private void OnSettingsClick(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenSettingsCommand.Execute(null);
     }
 
     private void OnEditClick(object? sender, RoutedEventArgs e)

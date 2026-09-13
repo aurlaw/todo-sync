@@ -35,7 +35,9 @@ public sealed class IosKeychainSecretStore : ISecretStore
         SecStatusCode status;
         if (findStatus == SecStatusCode.Success && existing is not null)
         {
-            status = SecKeyChain.Update(query, new SecRecord(SecKind.GenericPassword) { ValueData = valueData });
+            // The "new attributes" record must NOT set SecKind — that implicitly sets kSecClass,
+            // which SecItemUpdate rejects with errSecNoSuchAttr (class isn't an updatable attribute).
+            status = SecKeyChain.Update(query, new SecRecord { ValueData = valueData });
         }
         else
         {
