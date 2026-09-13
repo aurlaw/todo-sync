@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        macOS HIG-ish button chrome, layered on top of FluentTheme's default Button
+        ControlTheme (template + focus/disabled visuals kept; only chrome overridden).
+        Deliberately uses literal brushes rather than Fluent's internal resource keys,
+        since those aren't part of Avalonia's documented/stable API surface.
+    -->
+    <ControlTheme x:Key="PlatformButtonTheme" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#33808080" />
+        <Setter Property="Background" Value="#14808080" />
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="#26808080" />
+            <Setter Property="BorderBrush" Value="#40808080" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="#33808080" />
+            <Setter Property="BorderBrush" Value="#4d808080" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

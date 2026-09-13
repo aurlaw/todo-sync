@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Todo.App.ViewModels;
@@ -19,6 +20,12 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        var themeUri = OperatingSystem.IsMacOS()
+            ? new Uri("avares://Todo.App/Styles/MacButtonTheme.axaml")
+            : new Uri("avares://Todo.App/Styles/IosButtonTheme.axaml");
+
+        Resources.MergedDictionaries.Add((IResourceDictionary)AvaloniaXamlLoader.Load(themeUri));
     }
 
     public override void OnFrameworkInitializationCompleted()
