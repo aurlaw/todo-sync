@@ -14,7 +14,7 @@ Full design decisions and phased plan: `Tech/todo-sync/project-plan.md` in the O
 | 1 ✅ | iOS head, shared-view split, per-platform secret storage |
 | 2 ✅ | Cloudflare Worker + D1 sync backend — deployed |
 | 3 ✅ | Sync engine (push/pull, conflict handling) |
-| 4 | Signing + install workflow |
+| 4 ✅ | Signing + install workflow |
 | 5 | Reminders (recurrence, notifications) |
 
 ## Prerequisites
