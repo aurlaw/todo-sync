@@ -67,3 +67,6 @@ worker/worker-configuration.d.ts
 scripts/publish.local.env
 scripts/TodoSync.mobileprovision
 worker/token.dev
+
+xcuserdata/
+.DS_Store
