@@ -75,6 +75,7 @@ struct TodoEditView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
+                        .keyboardShortcut(.return, modifiers: .command)
                         .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
