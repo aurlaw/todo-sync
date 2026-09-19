@@ -179,6 +179,7 @@ struct ContentView: View {
                 try? store.complete(item, isDone: !item.isDone)
             } label: {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(item.isDone ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
             }
             .buttonStyle(.plain)
 
@@ -205,7 +206,7 @@ struct ContentView: View {
             } label: {
                 Label(item.isDone ? "Undo" : "Complete", systemImage: "checkmark")
             }
-            .tint(.green)
+            .tint(.accentColor)
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
