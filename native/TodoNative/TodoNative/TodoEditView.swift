@@ -37,9 +37,14 @@ struct TodoEditView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
+                Section("Title") {
                     TextField("Title", text: $title)
-                    TextField("Notes", text: $notes, axis: .vertical)
+                        .labelsHidden()
+                }
+
+                Section("Notes") {
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 120)
                 }
 
                 Section {
@@ -61,13 +66,8 @@ struct TodoEditView: View {
                         Stepper("Every \(interval) \(unitLabel)", value: $interval, in: 1...30)
                     }
                 }
-
-                if item != nil {
-                    Section {
-                        Button("Delete", role: .destructive, action: delete)
-                    }
-                }
             }
+            .formStyle(.grouped)
             .navigationTitle(item == nil ? "New Todo" : "Edit Todo")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -80,6 +80,9 @@ struct TodoEditView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 460, minHeight: 500)
+        #endif
     }
 
     private var unitLabel: String {
@@ -104,16 +107,6 @@ struct TodoEditView: View {
             dismiss()
         } catch {
             assertionFailure("Failed to save todo: \(error)")
-        }
-    }
-
-    private func delete() {
-        guard let item else { return }
-        do {
-            try store.softDelete(item)
-            dismiss()
-        } catch {
-            assertionFailure("Failed to delete todo: \(error)")
         }
     }
 }
