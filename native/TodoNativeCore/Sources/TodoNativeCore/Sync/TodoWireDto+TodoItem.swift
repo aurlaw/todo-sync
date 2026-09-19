@@ -26,6 +26,39 @@ extension TodoWireDto {
     /// Builds a clean (`dirty == false`) item. An undecodable `recurrence` string becomes nil
     /// rather than failing the whole row.
     public func makeItem() throws -> TodoItem {
+        let parsed = try parse()
+        return TodoItem(
+            id: parsed.uuid,
+            title: title,
+            notes: notes,
+            isDone: isDone,
+            dueAt: parsed.due,
+            recurrence: recurrence.flatMap(Self.decodeRecurrence),
+            createdAt: parsed.created,
+            updatedAt: parsed.updated,
+            isSoftDeleted: isDeleted,
+            dirty: false,
+            serverSeq: serverSeq
+        )
+    }
+
+    /// Overwrites `item` with this row and marks it clean. Throws before touching `item` if the
+    /// row is malformed, so a bad row never leaves a half-applied item behind.
+    public func apply(to item: TodoItem) throws {
+        let parsed = try parse()
+        item.title = title
+        item.notes = notes
+        item.isDone = isDone
+        item.dueAt = parsed.due
+        item.recurrence = recurrence.flatMap(Self.decodeRecurrence)
+        item.createdAt = parsed.created
+        item.updatedAt = parsed.updated
+        item.isSoftDeleted = isDeleted
+        item.dirty = false
+        item.serverSeq = serverSeq
+    }
+
+    private func parse() throws -> (uuid: UUID, created: Date, updated: Date, due: Date?) {
         guard let uuid = UUID(uuidString: id) else { throw WireError.invalidID(id) }
         guard let created = Iso8601.parse(createdAt) else {
             throw WireError.invalidDate(field: "createdAt", value: createdAt)
@@ -35,25 +68,12 @@ extension TodoWireDto {
         }
         var due: Date?
         if let dueAt {
-            guard let parsed = Iso8601.parse(dueAt) else {
+            guard let parsedDue = Iso8601.parse(dueAt) else {
                 throw WireError.invalidDate(field: "dueAt", value: dueAt)
             }
-            due = parsed
+            due = parsedDue
         }
-
-        return TodoItem(
-            id: uuid,
-            title: title,
-            notes: notes,
-            isDone: isDone,
-            dueAt: due,
-            recurrence: recurrence.flatMap(Self.decodeRecurrence),
-            createdAt: created,
-            updatedAt: updated,
-            isSoftDeleted: isDeleted,
-            dirty: false,
-            serverSeq: serverSeq
-        )
+        return (uuid, created, updated, due)
     }
 
     private static func encodeRecurrence(_ rule: RecurrenceRule) -> String? {

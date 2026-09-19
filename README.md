@@ -10,7 +10,9 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 
 **N0** is implemented and confirmed working: `TodoNativeCore` (SwiftData model, `TodoStore`, tests) plus a macOS SwiftUI app (list/add/edit/complete/delete via `TodoNative.xcodeproj`).
 
-**N1** is implemented: a three-column `NavigationSplitView` (Today / Upcoming / All / Done → list → detail), `KeychainStore`, and a Settings sheet for the Worker URL and token. It builds for macOS and iOS Simulator and launches on an iPhone simulator; tap-through interaction on iOS is still to be confirmed by hand. The Settings values are stored but unused until N3.
+**N1** is implemented: a three-column `NavigationSplitView` (Today / Upcoming / All / Done → list → detail), `KeychainStore`, and a Settings sheet for the Worker URL and token. It builds for macOS and iOS Simulator, and the saved Settings values now drive sync (N3).
+
+**N3** is implemented and confirmed working: `SyncClient` / `URLSessionSyncClient`, a `SyncEngine` actor (push dirty rows in chunks, pull with a persisted cursor, last-write-wins merge), and a `SyncCoordinator` that syncs on launch, on becoming active, and 2 seconds after an edit, with a toolbar sync control and a status banner. It passes its unit tests (fake client and `URLProtocol` stub; no live Worker calls) and has been tested against the real Worker. The macOS target needs **Outgoing Connections (Client)** enabled under App Sandbox or every request fails with `-1003` (see `native/CLAUDE.md`).
 
 **N2** is implemented: `TodoNativeCore/Sync/` has the Worker wire DTOs, an ISO 8601 formatter matching the .NET `"O"` shape the Worker's string comparison relies on, and `TodoItem` mapping. No networking yet. Tests decode a real `/changes` capture if one is dropped into the git-ignored `Fixtures/local/`.
 
@@ -19,7 +21,7 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 | N0 ✅ | Xcode scaffold, `TodoNativeCore` package, SwiftData model, macOS head (list/add/edit/complete/delete) |
 | N1 ✅ | iOS head, adaptive layout, Keychain secret storage, Settings screen |
 | N2 ✅ | Swift DTOs against the existing Worker JSON — no Worker changes |
-| N3 | Sync engine (push/pull, conflict handling) |
+| N3 ✅ | Sync engine (push/pull, conflict handling) |
 | N4 | Signing + install workflow |
 | N5 | Reminders (recurrence, `UNUserNotificationCenter`) |
 
@@ -39,7 +41,8 @@ todo-sync/
     CLAUDE.md               Swift-specific rules; loads alongside root CLAUDE.md when running claude from native/
     TodoNative/             Xcode project — TodoNative.xcodeproj, app target (SwiftUI views)
     TodoNativeCore/         local Swift package — models, TodoStore, ModelContainer factory,
-                            Secrets/ (KeychainStore), Sync/ (wire DTOs, Iso8601), tests
+                            Secrets/ (KeychainStore), Sync/ (wire DTOs, Iso8601, client, engine,
+                            coordinator), tests
 ```
 
 Full target layout (later phases) and per-phase briefs: `Tech/todo-sync/native/swift-rewrite-plan.md` and `Tech/todo-sync/native/phase-N0-scaffold.md`, `phase-N1-ios-head.md`, `phase-N2-worker-dtos.md`.
@@ -56,7 +59,7 @@ xcodebuild -project TodoNative.xcodeproj -scheme TodoNative -destination 'platfo
 xcodebuild -project TodoNative.xcodeproj -scheme TodoNative -destination 'generic/platform=iOS Simulator' build
 ```
 
-The app's SwiftData store lives in the default app-support location Apple picks for its bundle id (`com.aurlaw.TodoNative`); the Keychain items use service `com.aurlaw.todonative`. No sync yet — everything is local-only until N3.
+The app's SwiftData store lives in the default app-support location Apple picks for its bundle id (`com.aurlaw.TodoNative`); the Keychain items use service `com.aurlaw.todonative`. Sync stays off until both the Worker URL and token are saved in Settings.
 
 To check real Worker payloads against the DTOs, save a `GET /changes?since=0` response as `native/TodoNativeCore/Tests/TodoNativeCoreTests/Fixtures/local/changes.json` (git-ignored, never committed) and run `swift test`.
 

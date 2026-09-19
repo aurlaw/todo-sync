@@ -10,6 +10,7 @@ import TodoNativeCore
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(SyncCoordinator.self) private var coordinator
 
     let secrets: any SecretStore
 
@@ -29,7 +30,16 @@ struct SettingsView: View {
                         #endif
                     SecureField("API token", text: $token)
                 } footer: {
-                    Text("Stored in the Keychain on this device. Used for sync once it is enabled.")
+                    Text("Stored in the Keychain on this device. Saving runs a sync.")
+                }
+
+                Section {
+                    Button("Reset sync (full re-pull)") {
+                        Task { await coordinator.resetAndSync() }
+                        dismiss()
+                    }
+                } footer: {
+                    Text("Pulls everything from the server again using the saved URL and token. Local changes are pushed first and kept.")
                 }
 
                 if let errorMessage {
@@ -53,7 +63,7 @@ struct SettingsView: View {
             .onAppear(perform: load)
         }
         #if os(macOS)
-        .frame(minWidth: 420, minHeight: 240)
+        .frame(minWidth: 420, minHeight: 320)
         #endif
     }
 
@@ -66,6 +76,7 @@ struct SettingsView: View {
         do {
             try store(.workerBaseURL, baseURL)
             try store(.apiToken, token)
+            Task { await coordinator.syncNow() }
             dismiss()
         } catch {
             errorMessage = "Could not save to the Keychain: \(error)"

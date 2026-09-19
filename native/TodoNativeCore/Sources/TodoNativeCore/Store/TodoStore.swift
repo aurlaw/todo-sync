@@ -8,10 +8,13 @@ import SwiftData
 public struct TodoStore {
     private let context: ModelContext
     private let clock: Clock
+    private let onMutation: (@MainActor () -> Void)?
 
-    public init(context: ModelContext, clock: Clock = SystemClock()) {
+    /// `onMutation` runs after every successful save; the app uses it to schedule a sync.
+    public init(context: ModelContext, clock: Clock = SystemClock(), onMutation: (@MainActor () -> Void)? = nil) {
         self.context = context
         self.clock = clock
+        self.onMutation = onMutation
     }
 
     @discardableResult
@@ -33,6 +36,7 @@ public struct TodoStore {
         )
         context.insert(item)
         try context.save()
+        onMutation?()
         return item
     }
 
@@ -65,5 +69,6 @@ public struct TodoStore {
         item.updatedAt = clock.now()
         item.dirty = true
         try context.save()
+        onMutation?()
     }
 }

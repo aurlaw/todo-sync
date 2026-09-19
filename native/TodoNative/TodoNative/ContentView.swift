@@ -70,6 +70,8 @@ private enum Sheet: Identifiable {
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(SyncCoordinator.self) private var coordinator
     @Query(
         filter: #Predicate<TodoItem> { !$0.isSoftDeleted },
         sort: \TodoItem.createdAt
@@ -82,7 +84,9 @@ struct ContentView: View {
 
     private let secrets: any SecretStore = KeychainStore()
 
-    private var store: TodoStore { TodoStore(context: modelContext) }
+    private var store: TodoStore {
+        TodoStore(context: modelContext, onMutation: { [coordinator] in coordinator.scheduleSync() })
+    }
 
     private var visibleItems: [TodoItem] {
         let category = category ?? .all
@@ -101,6 +105,9 @@ struct ContentView: View {
             itemList
         } detail: {
             detail
+        }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active { coordinator.handleActive() }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
@@ -142,7 +149,15 @@ struct ContentView: View {
                 ContentUnavailableView("Nothing here", systemImage: "checklist")
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SyncStatusBanner(status: coordinator.status)
+        }
         .toolbar {
+            ToolbarItem {
+                SyncStatusButton(status: coordinator.status) {
+                    Task { await coordinator.syncNow() }
+                }
+            }
             ToolbarItem {
                 Button {
                     sheet = .new
@@ -235,6 +250,8 @@ struct ContentView: View {
 }
 
 #Preview {
+    let container = try! TodoContainer.make(inMemory: true)
     ContentView()
-        .modelContainer(try! TodoContainer.make(inMemory: true))
+        .modelContainer(container)
+        .environment(SyncCoordinator(engine: SyncEngine(modelContainer: container, client: URLSessionSyncClient(secrets: KeychainStore()))))
 }
