@@ -10,11 +10,15 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 
 **N0** is implemented and confirmed working: `TodoNativeCore` (SwiftData model, `TodoStore`, tests) plus a macOS SwiftUI app (list/add/edit/complete/delete via `TodoNative.xcodeproj`).
 
+**N1** is implemented: a three-column `NavigationSplitView` (Today / Upcoming / All / Done → list → detail), `KeychainStore`, and a Settings sheet for the Worker URL and token. It builds for macOS and iOS Simulator and launches on an iPhone simulator; tap-through interaction on iOS is still to be confirmed by hand. The Settings values are stored but unused until N3.
+
+**N2** is implemented: `TodoNativeCore/Sync/` has the Worker wire DTOs, an ISO 8601 formatter matching the .NET `"O"` shape the Worker's string comparison relies on, and `TodoItem` mapping. No networking yet. Tests decode a real `/changes` capture if one is dropped into the git-ignored `Fixtures/local/`.
+
 | Phase | Scope |
 |---|---|
 | N0 ✅ | Xcode scaffold, `TodoNativeCore` package, SwiftData model, macOS head (list/add/edit/complete/delete) |
-| N1 | iOS head, adaptive layout, Keychain secret storage, Settings screen |
-| N2 | Swift DTOs against the existing Worker JSON — no Worker changes |
+| N1 ✅ | iOS head, adaptive layout, Keychain secret storage, Settings screen |
+| N2 ✅ | Swift DTOs against the existing Worker JSON — no Worker changes |
 | N3 | Sync engine (push/pull, conflict handling) |
 | N4 | Signing + install workflow |
 | N5 | Reminders (recurrence, `UNUserNotificationCenter`) |
@@ -34,23 +38,27 @@ todo-sync/
   native/
     CLAUDE.md               Swift-specific rules; loads alongside root CLAUDE.md when running claude from native/
     TodoNative/             Xcode project — TodoNative.xcodeproj, app target (SwiftUI views)
-    TodoNativeCore/         local Swift package — models, TodoStore, ModelContainer factory, tests
+    TodoNativeCore/         local Swift package — models, TodoStore, ModelContainer factory,
+                            Secrets/ (KeychainStore), Sync/ (wire DTOs, Iso8601), tests
 ```
 
-Full target layout (later phases) documented in `Tech/todo-sync/native/swift-rewrite-plan.md` and `Tech/todo-sync/native/phase-N0-scaffold.md`.
+Full target layout (later phases) and per-phase briefs: `Tech/todo-sync/native/swift-rewrite-plan.md` and `Tech/todo-sync/native/phase-N0-scaffold.md`, `phase-N1-ios-head.md`, `phase-N2-worker-dtos.md`.
 
 ### Native app (`native/`)
 
 ```bash
-# Run TodoNativeCore's tests (models, TodoStore mutation rules)
+# Run TodoNativeCore's tests (models, TodoStore, Keychain, wire DTOs)
 cd native/TodoNativeCore && swift test
 
 # Build/run the app — open in Xcode, or from the command line:
 cd native/TodoNative
 xcodebuild -project TodoNative.xcodeproj -scheme TodoNative -destination 'platform=macOS' build
+xcodebuild -project TodoNative.xcodeproj -scheme TodoNative -destination 'generic/platform=iOS Simulator' build
 ```
 
-The macOS app's SwiftData store lives in the default app-support location Apple picks for the app's bundle id (`com.aurlaw.todonative`). No sync yet — everything is local-only until N3.
+The app's SwiftData store lives in the default app-support location Apple picks for its bundle id (`com.aurlaw.TodoNative`); the Keychain items use service `com.aurlaw.todonative`. No sync yet — everything is local-only until N3.
+
+To check real Worker payloads against the DTOs, save a `GET /changes?since=0` response as `native/TodoNativeCore/Tests/TodoNativeCoreTests/Fixtures/local/changes.json` (git-ignored, never committed) and run `swift test`.
 
 ### Worker (`worker/`)
 

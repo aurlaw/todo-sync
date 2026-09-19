@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "id": "3f2b8c1e-9a4d-4e7b-8c55-1d2e3f4a5b6c",
+      "title": "Buy milk",
+      "notes": null,
+      "isDone": false,
+      "dueAt": "2026-09-20T14:00:00.0000000+00:00",
+      "recurrence": null,
+      "createdAt": "2026-09-13T15:04:05.1234560+00:00",
+      "updatedAt": "2026-09-13T15:04:05.1234560+00:00",
+      "isDeleted": false,
+      "serverSeq": 1
+    },
+    {
+      "id": "9b1d5a20-3c4e-4f6a-8d7b-2e1f0a9c8b7d",
+      "title": "Call the dentist",
+      "notes": "Ask about the crown",
+      "isDone": true,
+      "dueAt": null,
+      "recurrence": null,
+      "createdAt": "2026-09-14T09:30:00.5000000+00:00",
+      "updatedAt": "2026-09-15T18:45:10.9876540+00:00",
+      "isDeleted": true,
+      "serverSeq": 2
+    },
+    {
+      "id": "c7e4a1b2-5d6f-4a8b-9c0d-1e2f3a4b5c6d",
+      "title": "Water plants",
+      "notes": null,
+      "isDone": false,
+      "dueAt": "2026-09-22T08:00:00.0000000+00:00",
+      "recurrence": "{\"daysOfWeek\":[2,4],\"frequency\":\"weekly\",\"interval\":1}",
+      "createdAt": "2026-09-19T12:00:00.0000000+00:00",
+      "updatedAt": "2026-09-19T12:00:00.0000000+00:00",
+      "isDeleted": false,
+      "serverSeq": 3
+    }
+  ],
+  "cursor": 3
+}

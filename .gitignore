@@ -70,3 +70,4 @@ worker/token.dev
 
 xcuserdata/
 .DS_Store
+native/TodoNativeCore/Tests/TodoNativeCoreTests/Fixtures/local/

@@ -24,7 +24,8 @@ let package = Package(
         ),
         .testTarget(
             name: "TodoNativeCoreTests",
-            dependencies: ["TodoNativeCore"]
+            dependencies: ["TodoNativeCore"],
+            resources: [.copy("Fixtures")]
         ),
     ],
     swiftLanguageModes: [.v6]

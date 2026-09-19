@@ -18,4 +18,16 @@ public struct RecurrenceRule: Codable, Sendable, Equatable {
         self.interval = interval
         self.daysOfWeek = frequency == .weekly ? daysOfWeek : nil
     }
+
+    enum CodingKeys: String, CodingKey {
+        case frequency, interval, daysOfWeek
+    }
+
+    /// A Set encodes in unstable order; the wire string must be deterministic, so days are sorted.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(frequency, forKey: .frequency)
+        try container.encode(interval, forKey: .interval)
+        try container.encodeIfPresent(daysOfWeek?.sorted(), forKey: .daysOfWeek)
+    }
 }
