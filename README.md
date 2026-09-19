@@ -14,6 +14,8 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 
 **N3** is implemented and confirmed working: `SyncClient` / `URLSessionSyncClient`, a `SyncEngine` actor (push dirty rows in chunks, pull with a persisted cursor, last-write-wins merge), and a `SyncCoordinator` that syncs on launch, on becoming active, and 2 seconds after an edit, with a toolbar sync control and a status banner. It passes its unit tests (fake client and `URLProtocol` stub; no live Worker calls) and has been tested against the real Worker. The macOS target needs **Outgoing Connections (Client)** enabled under App Sandbox or every request fails with `-1003` (see `native/CLAUDE.md`).
 
+**N4** is complete: the Release configuration builds for iOS and macOS, the release-mode tests pass, and both installs are confirmed working — the Mac (Archive on My Mac, Distribute App > Debugging, copy to `/Applications`) and the iPhone. The steps and the deadline-driven re-sign checklist are in `Tech/todo-sync/native/phase-N4-signing-install.md`. Note that installs expire with the signing **certificate** (currently 2027-02-20), not a year after the install.
+
 **N2** is implemented: `TodoNativeCore/Sync/` has the Worker wire DTOs, an ISO 8601 formatter matching the .NET `"O"` shape the Worker's string comparison relies on, and `TodoItem` mapping. No networking yet. Tests decode a real `/changes` capture if one is dropped into the git-ignored `Fixtures/local/`.
 
 | Phase | Scope |
@@ -22,7 +24,7 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 | N1 ✅ | iOS head, adaptive layout, Keychain secret storage, Settings screen |
 | N2 ✅ | Swift DTOs against the existing Worker JSON — no Worker changes |
 | N3 ✅ | Sync engine (push/pull, conflict handling) |
-| N4 | Signing + install workflow |
+| N4 ✅ | Signing + install workflow |
 | N5 | Reminders (recurrence, `UNUserNotificationCenter`) |
 
 ## Prerequisites
@@ -36,7 +38,7 @@ Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan
 todo-sync/
   src/, tests/, Todo.slnx   archived Avalonia client — reference only, do not touch
   worker/                   Cloudflare Worker + D1 backend (TypeScript) — push/changes/auth, see below
-  scripts/                  Avalonia-era publish/codesign wrappers — superseded once native/ has its own signing workflow (N4)
+  scripts/                  Avalonia-era publish/codesign wrappers — archived with the Avalonia client; the Swift app installs via Xcode (see N4 doc)
   native/
     CLAUDE.md               Swift-specific rules; loads alongside root CLAUDE.md when running claude from native/
     TodoNative/             Xcode project — TodoNative.xcodeproj, app target (SwiftUI views)
