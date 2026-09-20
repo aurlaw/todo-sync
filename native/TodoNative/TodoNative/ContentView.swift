@@ -129,8 +129,13 @@ struct ContentView: View {
 
     private var sidebar: some View {
         List(Category.allCases, selection: $category) { category in
-            Label(category.title, systemImage: category.systemImage)
-                .tag(category)
+            Label {
+                Text(category.title)
+            } icon: {
+                Image(systemName: category.systemImage)
+                    .foregroundStyle(.tint)
+            }
+            .tag(category)
         }
         .navigationTitle("Todo")
         .toolbar {

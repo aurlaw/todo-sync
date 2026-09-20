@@ -4,28 +4,7 @@ A personal TODO app for one user. Native Swift/SwiftUI on macOS + iOS, offline-f
 
 Full design decisions and phased plan: `Tech/todo-sync/native/swift-rewrite-plan.md` in the Obsidian vault (see `CLAUDE.md` for the working agreement and stack details).
 
-## Status
 
-**Rewrite in progress.** The original Avalonia/.NET client (phases 0-4, see `READMEAvalonia.md`) was judged not good enough on the UI front and is now archived — kept in `src/`, `tests/`, `Todo.slnx` for reference, not run or maintained. The app is being rebuilt from scratch as a pure-Swift, fully native client under `native/`. The Cloudflare Worker + D1 backend and its wire protocol are unchanged and carry forward as-is.
-
-**N0** is implemented and confirmed working: `TodoNativeCore` (SwiftData model, `TodoStore`, tests) plus a macOS SwiftUI app (list/add/edit/complete/delete via `TodoNative.xcodeproj`).
-
-**N1** is implemented: a three-column `NavigationSplitView` (Today / Upcoming / All / Done → list → detail), `KeychainStore`, and a Settings sheet for the Worker URL and token. It builds for macOS and iOS Simulator, and the saved Settings values now drive sync (N3).
-
-**N3** is implemented and confirmed working: `SyncClient` / `URLSessionSyncClient`, a `SyncEngine` actor (push dirty rows in chunks, pull with a persisted cursor, last-write-wins merge), and a `SyncCoordinator` that syncs on launch, on becoming active, and 2 seconds after an edit, with a toolbar sync control and a status banner. It passes its unit tests (fake client and `URLProtocol` stub; no live Worker calls) and has been tested against the real Worker. The macOS target needs **Outgoing Connections (Client)** enabled under App Sandbox or every request fails with `-1003` (see `native/CLAUDE.md`).
-
-**N4** is complete: the Release configuration builds for iOS and macOS, the release-mode tests pass, and both installs are confirmed working — the Mac (Archive on My Mac, Distribute App > Debugging, copy to `/Applications`) and the iPhone. The steps and the deadline-driven re-sign checklist are in `Tech/todo-sync/native/phase-N4-signing-install.md`. Note that installs expire with the signing **certificate** (currently 2027-02-20), not a year after the install.
-
-**N2** is implemented: `TodoNativeCore/Sync/` has the Worker wire DTOs, an ISO 8601 formatter matching the .NET `"O"` shape the Worker's string comparison relies on, and `TodoItem` mapping. No networking yet. Tests decode a real `/changes` capture if one is dropped into the git-ignored `Fixtures/local/`.
-
-| Phase | Scope |
-|---|---|
-| N0 ✅ | Xcode scaffold, `TodoNativeCore` package, SwiftData model, macOS head (list/add/edit/complete/delete) |
-| N1 ✅ | iOS head, adaptive layout, Keychain secret storage, Settings screen |
-| N2 ✅ | Swift DTOs against the existing Worker JSON — no Worker changes |
-| N3 ✅ | Sync engine (push/pull, conflict handling) |
-| N4 ✅ | Signing + install workflow |
-| N5 | Reminders (recurrence, `UNUserNotificationCenter`) |
 
 ## Prerequisites
 
