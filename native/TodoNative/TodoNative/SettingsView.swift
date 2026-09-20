@@ -48,6 +48,10 @@ struct SettingsView: View {
                             .foregroundStyle(.red)
                     }
                 }
+
+                Section {
+                    LabeledContent("Version", value: Self.versionDescription)
+                }
             }
             .formStyle(.grouped)
             .navigationTitle("Settings")
@@ -66,6 +70,14 @@ struct SettingsView: View {
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 320)
         #endif
+    }
+
+    /// "1.0 (4)": `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` from the built bundle's Info.plist.
+    private static var versionDescription: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
     }
 
     private func load() {

@@ -21,7 +21,6 @@ A from-scratch native Swift/SwiftUI rewrite of todo-sync, replacing the archived
 
 - **Michael creates and owns `TodoNative.xcodeproj`** (new targets, destinations, capabilities, signing) — Claude Code doesn't hand-author `.pbxproj`. Claude authors everything inside `TodoNativeCore` and the app target's Swift/SwiftUI source once the project exists.
 - Claude may run `swift build` / `swift test` inside `TodoNativeCore` freely to verify the package compiles and its tests pass. Building/running the actual `TodoNative` app target (Xcode scheme, simulator, device) is normally Michael's step unless asked to verify a compile-only build via `xcodebuild`.
-- Phases are `N0`-`N5`, mirroring the archived Avalonia phases 0-4 one for one (see the table in `swift-rewrite-plan.md`). Stay inside the current phase's brief.
 
 ## Gotchas
 
