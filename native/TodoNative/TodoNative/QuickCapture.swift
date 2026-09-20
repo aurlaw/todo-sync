@@ -18,7 +18,10 @@ final class QuickCapture {
     private var hotkey: GlobalHotkey?
 
     init(context: ModelContext, coordinator: SyncCoordinator) {
-        store = TodoStore(context: context, onMutation: { [coordinator] in coordinator.scheduleSync() })
+        store = TodoStore(context: context, onMutation: { [coordinator] in
+            coordinator.scheduleSync()
+            WidgetReloader.reloadAll()
+        })
         // ⌃⌥Space. Failure is logged by `GlobalHotkey`; the menu-bar item still works.
         hotkey = GlobalHotkey(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey)) { [weak self] in
             self?.togglePanel()

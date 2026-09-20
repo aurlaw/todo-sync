@@ -8,11 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		4566CBCD30576E16004F15C4 /* TodoNativeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4566CBCC30576E16004F15C4 /* TodoNativeCore */; };
+		4577F27930608C490060B73A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4577F25F30608BD40060B73A /* WidgetKit.framework */; };
+		4577F27A30608C490060B73A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4577F26130608BD40060B73A /* SwiftUI.framework */; };
+		4577F28530608C4A0060B73A /* TodoNativeWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4577F27830608C490060B73A /* TodoNativeWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4577F28E30608CBA0060B73A /* TodoNativeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4577F28D30608CBA0060B73A /* TodoNativeCore */; };
 		45CFB6603060763C00CFC0BA /* TodoNativeShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		45CFB6693060767900CFC0BA /* TodoNativeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45CFB6683060767900CFC0BA /* TodoNativeCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4577F28330608C4A0060B73A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4566CBB530576D86004F15C4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4577F27730608C490060B73A;
+			remoteInfo = TodoNativeWidgetsExtension;
+		};
 		45CFB65E3060763C00CFC0BA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4566CBB530576D86004F15C4 /* Project object */;
@@ -29,6 +40,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				4577F28530608C4A0060B73A /* TodoNativeWidgetsExtension.appex in Embed Foundation Extensions */,
 				45CFB6603060763C00CFC0BA /* TodoNativeShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -38,10 +50,28 @@
 
 /* Begin PBXFileReference section */
 		4566CBBD30576D86004F15C4 /* TodoNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodoNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4577F25F30608BD40060B73A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4577F26130608BD40060B73A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		4577F27830608C490060B73A /* TodoNativeWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TodoNativeWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4577F28C30608C910060B73A /* TodoNativeWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodoNativeWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TodoNativeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4577F25930608B4F0060B73A /* Exceptions for "TodoNative" folder in "TodoNative" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4566CBBC30576D86004F15C4 /* TodoNative */;
+		};
+		4577F28930608C4A0060B73A /* Exceptions for "TodoNativeWidgets" folder in "TodoNativeWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4577F27730608C490060B73A /* TodoNativeWidgetsExtension */;
+		};
 		45CFB6613060763C00CFC0BA /* Exceptions for "TodoNativeShare" folder in "TodoNativeShare" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -54,7 +84,23 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4566CBBF30576D86004F15C4 /* TodoNative */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4577F25930608B4F0060B73A /* Exceptions for "TodoNative" folder in "TodoNative" target */,
+			);
 			path = TodoNative;
+			sourceTree = "<group>";
+		};
+		4577F26330608BD40060B73A /* TodoNativeWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TodoNativeWidgets;
+			sourceTree = "<group>";
+		};
+		4577F27B30608C490060B73A /* TodoNativeWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4577F28930608C4A0060B73A /* Exceptions for "TodoNativeWidgets" folder in "TodoNativeWidgetsExtension" target */,
+			);
+			path = TodoNativeWidgets;
 			sourceTree = "<group>";
 		};
 		45CFB6573060763C00CFC0BA /* TodoNativeShare */ = {
@@ -76,6 +122,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4577F27530608C490060B73A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4577F27A30608C490060B73A /* SwiftUI.framework in Frameworks */,
+				4577F28E30608CBA0060B73A /* TodoNativeCore in Frameworks */,
+				4577F27930608C490060B73A /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		45CFB6533060763C00CFC0BA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -90,8 +146,11 @@
 		4566CBB430576D86004F15C4 = {
 			isa = PBXGroup;
 			children = (
+				4577F28C30608C910060B73A /* TodoNativeWidgetsExtension.entitlements */,
 				4566CBBF30576D86004F15C4 /* TodoNative */,
 				45CFB6573060763C00CFC0BA /* TodoNativeShare */,
+				4577F26330608BD40060B73A /* TodoNativeWidgets */,
+				4577F27B30608C490060B73A /* TodoNativeWidgets */,
 				45CFB6673060767900CFC0BA /* Frameworks */,
 				4566CBBE30576D86004F15C4 /* Products */,
 			);
@@ -102,6 +161,7 @@
 			children = (
 				4566CBBD30576D86004F15C4 /* TodoNative.app */,
 				45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */,
+				4577F27830608C490060B73A /* TodoNativeWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,6 +169,8 @@
 		45CFB6673060767900CFC0BA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4577F25F30608BD40060B73A /* WidgetKit.framework */,
+				4577F26130608BD40060B73A /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -129,6 +191,7 @@
 			);
 			dependencies = (
 				45CFB65F3060763C00CFC0BA /* PBXTargetDependency */,
+				4577F28430608C4A0060B73A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4566CBBF30576D86004F15C4 /* TodoNative */,
@@ -140,6 +203,29 @@
 			productName = TodoNative;
 			productReference = 4566CBBD30576D86004F15C4 /* TodoNative.app */;
 			productType = "com.apple.product-type.application";
+		};
+		4577F27730608C490060B73A /* TodoNativeWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4577F28630608C4A0060B73A /* Build configuration list for PBXNativeTarget "TodoNativeWidgetsExtension" */;
+			buildPhases = (
+				4577F27430608C490060B73A /* Sources */,
+				4577F27530608C490060B73A /* Frameworks */,
+				4577F27630608C490060B73A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4577F27B30608C490060B73A /* TodoNativeWidgets */,
+			);
+			name = TodoNativeWidgetsExtension;
+			packageProductDependencies = (
+				4577F28D30608CBA0060B73A /* TodoNativeCore */,
+			);
+			productName = TodoNativeWidgetsExtension;
+			productReference = 4577F27830608C490060B73A /* TodoNativeWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		45CFB6553060763C00CFC0BA /* TodoNativeShare */ = {
 			isa = PBXNativeTarget;
@@ -177,6 +263,9 @@
 					4566CBBC30576D86004F15C4 = {
 						CreatedOnToolsVersion = 26.6;
 					};
+					4577F27730608C490060B73A = {
+						CreatedOnToolsVersion = 26.6;
+					};
 					45CFB6553060763C00CFC0BA = {
 						CreatedOnToolsVersion = 26.6;
 					};
@@ -201,12 +290,20 @@
 			targets = (
 				4566CBBC30576D86004F15C4 /* TodoNative */,
 				45CFB6553060763C00CFC0BA /* TodoNativeShare */,
+				4577F27730608C490060B73A /* TodoNativeWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4566CBBB30576D86004F15C4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4577F27630608C490060B73A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -230,6 +327,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4577F27430608C490060B73A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		45CFB6523060763C00CFC0BA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -240,6 +344,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4577F28430608C4A0060B73A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4577F27730608C490060B73A /* TodoNativeWidgetsExtension */;
+			targetProxy = 4577F28330608C4A0060B73A /* PBXContainerItemProxy */;
+		};
 		45CFB65F3060763C00CFC0BA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilter = ios;
@@ -283,7 +392,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = T54JASTD4Z;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -347,7 +456,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = T54JASTD4Z;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -393,6 +502,7 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNative/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -448,6 +558,7 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNative/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -471,6 +582,90 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
+		4577F28730608C4A0060B73A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TodoNativeWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = T54JASTD4Z;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNativeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodoNativeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aurlaw.TodoNative.TodoNativeWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		4577F28830608C4A0060B73A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TodoNativeWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = T54JASTD4Z;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNativeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodoNativeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aurlaw.TodoNative.TodoNativeWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -559,6 +754,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		4577F28630608C4A0060B73A /* Build configuration list for PBXNativeTarget "TodoNativeWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4577F28730608C4A0060B73A /* Debug */,
+				4577F28830608C4A0060B73A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		45CFB6623060763C00CFC0BA /* Build configuration list for PBXNativeTarget "TodoNativeShare" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -580,6 +784,11 @@
 /* Begin XCSwiftPackageProductDependency section */
 		4566CBCC30576E16004F15C4 /* TodoNativeCore */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = TodoNativeCore;
+		};
+		4577F28D30608CBA0060B73A /* TodoNativeCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4566CBCB30576E16004F15C4 /* XCLocalSwiftPackageReference "../TodoNativeCore" */;
 			productName = TodoNativeCore;
 		};
 		45CFB6683060767900CFC0BA /* TodoNativeCore */ = {

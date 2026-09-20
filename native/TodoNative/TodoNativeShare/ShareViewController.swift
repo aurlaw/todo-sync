@@ -86,7 +86,9 @@ final class ShareViewController: UIViewController {
     private func add(_ draft: CaptureDraft) {
         guard let container else { return cancel() }
         do {
-            try TodoCapture.save(draft, using: TodoStore(context: container.mainContext))
+            // No sync from here; the widgets, though, should show the new item straight away.
+            let store = TodoStore(context: container.mainContext, onMutation: { WidgetReloader.reloadAll() })
+            try TodoCapture.save(draft, using: store)
             extensionContext?.completeRequest(returningItems: nil)
         } catch {
             show(MessageView(text: "Couldn't save the todo: \(error)", close: cancel))

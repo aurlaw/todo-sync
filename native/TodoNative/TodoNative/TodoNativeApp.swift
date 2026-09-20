@@ -29,12 +29,15 @@ struct TodoNativeApp: App {
         modelContainer = container
 
         let client = URLSessionSyncClient(secrets: KeychainStore())
-        let engine = SyncEngine(modelContainer: container, client: client)
+        // A sync that applied rows changes what the widgets show.
+        let engine = SyncEngine(modelContainer: container, client: client, onChangesApplied: { WidgetReloader.reloadAll() })
         // Items that predate manual ordering are numbered once, after the first sync has caught this
         // device up. The store here has no onMutation: the coordinator schedules the push itself.
         let context = container.mainContext
         let coordinator = SyncCoordinator(engine: engine, afterSync: {
-            try TodoStore(context: context).backfillSortOrderIfNeeded()
+            let changed = try TodoStore(context: context).backfillSortOrderIfNeeded()
+            if changed { WidgetReloader.reloadAll() }
+            return changed
         })
         _coordinator = State(initialValue: coordinator)
         #if os(macOS)
@@ -48,6 +51,10 @@ struct TodoNativeApp: App {
                 .environment(coordinator)
         }
         .modelContainer(modelContainer)
+        #if os(macOS)
+        // Send widget/control URLs to the existing window instead of opening a new one. [NEEDS VERIFICATION]
+        .handlesExternalEvents(matching: ["*"])
+        #endif
 
         #if os(macOS)
         MenuBarExtra("Quick Capture", systemImage: "plus.circle") {

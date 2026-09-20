@@ -62,6 +62,19 @@ public struct TodoStore {
         try touch(item)
     }
 
+    /// A live (not soft-deleted) item by id, for callers that only hold an id, such as a widget's intent.
+    public func item(id: UUID) throws -> TodoItem? {
+        try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id && !$0.isSoftDeleted })).first
+    }
+
+    /// `complete(_:isDone:)` by id. Returns `false`, changing nothing, when there is no live item with that id.
+    @discardableResult
+    public func complete(id: UUID, isDone: Bool = true) throws -> Bool {
+        guard let found = try item(id: id) else { return false }
+        try complete(found, isDone: isDone)
+        return true
+    }
+
     /// Soft delete only — hard deletes happen nowhere in this app.
     public func softDelete(_ item: TodoItem) throws {
         item.isSoftDeleted = true

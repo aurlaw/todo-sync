@@ -39,23 +39,20 @@ enum Category: String, CaseIterable, Identifiable {
     }
 
     /// Active is every item not yet completed, dated or not. Today includes overdue items;
-    /// Today/Upcoming exclude completed ones.
+    /// Today/Upcoming exclude completed ones. Active, Today and Upcoming are defined in
+    /// `TodoFilter` (Core) so the widgets apply exactly the same rules.
     func includes(_ item: TodoItem, now: Date = .now, calendar: Calendar = .current) -> Bool {
         switch self {
         case .active:
-            return !item.isDone
+            return TodoFilter.isActive(item)
         case .all:
             return true
         case .done:
             return item.isDone
         case .today:
-            guard !item.isDone, let dueAt = item.dueAt else { return false }
-            let startOfTomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now)!)
-            return dueAt < startOfTomorrow
+            return TodoFilter.isDueTodayOrOverdue(item, now: now, calendar: calendar)
         case .upcoming:
-            guard !item.isDone, let dueAt = item.dueAt else { return false }
-            let startOfTomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now)!)
-            return dueAt >= startOfTomorrow
+            return TodoFilter.isUpcoming(item, now: now, calendar: calendar)
         }
     }
 }
@@ -91,7 +88,10 @@ struct ContentView: View {
     private let secrets: any SecretStore = KeychainStore()
 
     private var store: TodoStore {
-        TodoStore(context: modelContext, onMutation: { [coordinator] in coordinator.scheduleSync() })
+        TodoStore(context: modelContext, onMutation: { [coordinator] in
+            coordinator.scheduleSync()
+            WidgetReloader.reloadAll()
+        })
     }
 
     /// Active and All are the manually ordered lists; the rest sort by what defines them.
@@ -135,6 +135,9 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active { coordinator.handleActive() }
+        }
+        .onOpenURL { url in
+            if let link = DeepLink(url: url) { open(link) }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
@@ -293,6 +296,21 @@ struct ContentView: View {
         guard canReorder else { return nil }
         return { source, destination in
             try? store.move(fromOffsets: source, toOffset: destination, in: visibleItems)
+        }
+    }
+
+    /// Where a widget or control tap lands. An unknown item id (deleted since the widget last drew) is ignored.
+    private func open(_ link: DeepLink) {
+        switch link {
+        case .today:
+            category = .today
+            selectedItemID = nil
+        case .new:
+            sheet = .new
+        case .item(let id):
+            guard let item = items.first(where: { $0.id == id }) else { return }
+            category = item.isDone ? .done : .active
+            selectedItemID = id
         }
     }
 
