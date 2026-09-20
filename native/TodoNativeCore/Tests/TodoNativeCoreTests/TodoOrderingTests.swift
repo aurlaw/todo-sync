@@ -44,29 +44,29 @@ private final class MutableClock: Clock, @unchecked Sendable {
 
 @Suite("Manual ordering: create")
 struct CreateOrderingTests {
-    @Test("the first item is 0 and each new item lands above the current top")
+    @Test("the first item is 0 and each new item lands below the current last")
     @MainActor
-    func newItemsGoToTop() throws {
+    func newItemsGoToEnd() throws {
         let rig = try Rig()
         let a = try rig.store.create(title: "a")
         let b = try rig.store.create(title: "b")
         let c = try rig.store.create(title: "c")
 
         #expect(a.sortOrder == 0)
-        #expect(b.sortOrder == -1)
-        #expect(c.sortOrder == -2)
-        #expect(try rig.order() == ["c", "b", "a"])
+        #expect(b.sortOrder == 1)
+        #expect(c.sortOrder == 2)
+        #expect(try rig.order() == ["a", "b", "c"])
     }
 
-    @Test("soft-deleted rows do not count toward the top")
+    @Test("soft-deleted rows do not count toward the end")
     @MainActor
     func ignoresDeleted() throws {
         let rig = try Rig()
-        let gone = try rig.seed("gone", order: -50, created: 1)
+        let gone = try rig.seed("gone", order: 50, created: 1)
         gone.isSoftDeleted = true
         try rig.seed("live", order: 3, created: 2)
 
-        #expect(try rig.store.create(title: "new").sortOrder == 2)
+        #expect(try rig.store.create(title: "new").sortOrder == 4)
     }
 }
 

@@ -25,8 +25,8 @@ public struct TodoStore {
         recurrence: RecurrenceRule? = nil
     ) throws -> TodoItem {
         let now = clock.now()
-        // New items go to the top of the list so a captured item is visible.
-        let sortOrder = try liveItems().first.map { $0.sortOrder - 1 } ?? 0
+        // New items go to the end of the list, below every live item.
+        let sortOrder = try liveItems().last.map { $0.sortOrder + 1 } ?? 0
         let item = TodoItem(
             title: title,
             notes: notes,
