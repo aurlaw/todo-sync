@@ -80,7 +80,7 @@ struct ContentView: View {
     @Environment(SyncCoordinator.self) private var coordinator
     @Query(
         filter: #Predicate<TodoItem> { !$0.isSoftDeleted },
-        sort: \TodoItem.createdAt
+        sort: [SortDescriptor(\TodoItem.sortOrder), SortDescriptor(\TodoItem.createdAt, order: .reverse)]
     )
     private var items: [TodoItem]
 
@@ -94,9 +94,30 @@ struct ContentView: View {
         TodoStore(context: modelContext, onMutation: { [coordinator] in coordinator.scheduleSync() })
     }
 
+    /// Active and All are the manually ordered lists; the rest sort by what defines them.
     private var visibleItems: [TodoItem] {
         let category = category ?? .active
-        return items.filter { category.includes($0) }
+        let filtered = items.filter { category.includes($0) }
+        switch category {
+        case .active, .all:
+            return filtered.sorted(by: TodoItem.manualOrder)
+        case .today, .upcoming:
+            return filtered.sorted {
+                let (lhs, rhs) = ($0.dueAt ?? .distantFuture, $1.dueAt ?? .distantFuture)
+                return lhs != rhs ? lhs < rhs : TodoItem.manualOrder($0, $1)
+            }
+        case .done:
+            return filtered.sorted {
+                $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : TodoItem.manualOrder($0, $1)
+            }
+        }
+    }
+
+    private var canReorder: Bool {
+        switch category ?? .active {
+        case .active, .all: true
+        case .today, .upcoming, .done: false
+        }
     }
 
     private var selectedItem: TodoItem? {
@@ -150,9 +171,12 @@ struct ContentView: View {
     }
 
     private var itemList: some View {
-        List(visibleItems, selection: $selectedItemID) { item in
-            row(for: item)
-                .tag(item.id)
+        List(selection: $selectedItemID) {
+            ForEach(visibleItems) { item in
+                row(for: item)
+                    .tag(item.id)
+            }
+            .onMove(perform: moveAction)
         }
         .navigationTitle((category ?? .active).title)
         #if os(iOS)
@@ -182,6 +206,12 @@ struct ContentView: View {
                 }
                 .keyboardShortcut("n")
             }
+            #if os(iOS)
+            // Drag handles appear in edit mode on iOS; macOS drags rows directly.
+            if canReorder {
+                ToolbarItem { EditButton() }
+            }
+            #endif
         }
         #if os(macOS)
         .onDeleteCommand {
@@ -251,7 +281,18 @@ struct ContentView: View {
                 try? store.complete(item, isDone: !item.isDone)
             }
             Button("Edit…") { sheet = .existing(item) }
+            if canReorder {
+                Button("Move to Top") { try? store.moveToTop(item) }
+            }
             Button("Delete", role: .destructive) { delete(item) }
+        }
+    }
+
+    /// `nil` switches drag-to-reorder off for the lists that aren't manually ordered.
+    private var moveAction: ((IndexSet, Int) -> Void)? {
+        guard canReorder else { return nil }
+        return { source, destination in
+            try? store.move(fromOffsets: source, toOffset: destination, in: visibleItems)
         }
     }
 

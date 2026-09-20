@@ -27,10 +27,19 @@ public final class SyncCoordinator {
     @ObservationIgnored private let debounce: Duration
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     @ObservationIgnored private var lastSync: Date?
+    @ObservationIgnored private let afterSync: (@MainActor () throws -> Bool)?
 
-    public init(engine: any SyncRunning, debounce: Duration = .seconds(2)) {
+    /// `afterSync` runs after every completed cycle, once local data is caught up with the server;
+    /// return `true` if it changed local rows and they need pushing. The app uses it for the
+    /// one-time sort-order backfill.
+    public init(
+        engine: any SyncRunning,
+        debounce: Duration = .seconds(2),
+        afterSync: (@MainActor () throws -> Bool)? = nil
+    ) {
         self.engine = engine
         self.debounce = debounce
+        self.afterSync = afterSync
     }
 
     /// Called after every local edit; a burst of edits collapses into one sync.
@@ -67,6 +76,7 @@ public final class SyncCoordinator {
             if outcome.coalesced { return }
             lastSync = .now
             status = .idle(lastSync: lastSync)
+            if (try? afterSync?()) == true { scheduleSync() }
         } catch is CancellationError {
             status = .idle(lastSync: lastSync)
         } catch SyncError.notConfigured {

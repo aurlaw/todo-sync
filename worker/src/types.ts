@@ -20,7 +20,15 @@ export interface TodoDto {
   updatedAt: string;
   isDeleted: boolean;
   serverSeq: number;
+  /** Manual list order, ascending. Always present on output. */
+  sortOrder: number;
 }
+
+/**
+ * What `/push` accepts. Same as `TodoDto` except `sortOrder` is optional: clients that predate N8
+ * omit it (or send null), and the Worker then keeps the stored value instead of resetting it.
+ */
+export type TodoPushDto = Omit<TodoDto, "sortOrder"> & { sortOrder?: number | null };
 
 export interface TodoRow {
   id: string;
@@ -33,6 +41,7 @@ export interface TodoRow {
   updated_at: string;
   is_deleted: number;
   server_seq: number;
+  sort_order: number;
 }
 
 export function rowToDto(row: TodoRow): TodoDto {
@@ -47,5 +56,6 @@ export function rowToDto(row: TodoRow): TodoDto {
     updatedAt: row.updated_at,
     isDeleted: row.is_deleted !== 0,
     serverSeq: row.server_seq,
+    sortOrder: row.sort_order,
   };
 }

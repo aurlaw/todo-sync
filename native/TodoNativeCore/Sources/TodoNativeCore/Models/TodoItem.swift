@@ -14,6 +14,9 @@ public final class TodoItem {
     public var isSoftDeleted: Bool
     public var dirty: Bool
     public var serverSeq: Int64?
+    /// Manual list order, ascending. Fractional keys: a move sets one row to the midpoint of its new
+    /// neighbours. The declaration-site default is what lets SwiftData add the column to an existing store.
+    public var sortOrder: Double = 0
 
     /// Only `TodoStore` should call this directly — it does not set `updatedAt`/`dirty`,
     /// which is `TodoStore`'s job on every mutation. See `TodoStore` for the enforced writes.
@@ -28,7 +31,8 @@ public final class TodoItem {
         updatedAt: Date,
         isSoftDeleted: Bool = false,
         dirty: Bool = true,
-        serverSeq: Int64? = nil
+        serverSeq: Int64? = nil,
+        sortOrder: Double = 0
     ) {
         self.id = id
         self.title = title
@@ -41,5 +45,16 @@ public final class TodoItem {
         self.isSoftDeleted = isSoftDeleted
         self.dirty = dirty
         self.serverSeq = serverSeq
+        self.sortOrder = sortOrder
+    }
+}
+
+extension TodoItem {
+    /// The one list ordering: `sortOrder` ascending, then newest first, then id so it is total.
+    /// Rows that have never been ordered (all 0) therefore read newest-first.
+    public static func manualOrder(_ lhs: TodoItem, _ rhs: TodoItem) -> Bool {
+        if lhs.sortOrder != rhs.sortOrder { return lhs.sortOrder < rhs.sortOrder }
+        if lhs.createdAt != rhs.createdAt { return lhs.createdAt > rhs.createdAt }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 }

@@ -13,9 +13,12 @@ public struct TodoWireDto: Codable, Sendable, Equatable {
     public var updatedAt: String
     public var isDeleted: Bool
     public var serverSeq: Int64?
+    /// Optional on the wire: rows the Worker never had an order for, or from a Worker that predates
+    /// N8, omit it. A nil never resets a local order (see `apply(to:)`).
+    public var sortOrder: Double? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, title, notes, isDone, dueAt, recurrence, createdAt, updatedAt, isDeleted, serverSeq
+        case id, title, notes, isDone, dueAt, recurrence, createdAt, updatedAt, isDeleted, serverSeq, sortOrder
     }
 
     /// The Worker rejects a row as "invalid" if `notes`/`dueAt`/`recurrence` are omitted rather
@@ -32,6 +35,7 @@ public struct TodoWireDto: Codable, Sendable, Equatable {
         try container.encode(updatedAt, forKey: .updatedAt)
         try container.encode(isDeleted, forKey: .isDeleted)
         try container.encode(serverSeq, forKey: .serverSeq)
+        try container.encode(sortOrder, forKey: .sortOrder)
     }
 }
 

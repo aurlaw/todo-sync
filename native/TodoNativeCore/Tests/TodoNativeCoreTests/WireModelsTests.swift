@@ -22,6 +22,15 @@ func workerAcceptsPushItem(_ json: [String: Any]) -> Bool {
         && json["createdAt"] is String
         && json["updatedAt"] is String
         && json["isDeleted"] is Bool
+        && isMissingNullOrNumber("sortOrder")
+
+    func isMissingNullOrNumber(_ key: String) -> Bool {
+        guard let value = json[key] else { return true }
+        if value is NSNull { return true }
+        // `NSNumber(0) is Bool` is true in Swift, so tell a JSON boolean from a number by CF type.
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) != CFBooleanGetTypeID()
+    }
 }
 
 func jsonObject(_ dto: TodoWireDto) throws -> [String: Any] {
@@ -57,24 +66,54 @@ struct WireModelsTests {
         #expect(response.rejected.last?.id == "unknown")
     }
 
-    @Test("encodes exactly the ten camelCase keys, with explicit nulls and no dirty")
+    @Test("encodes exactly the eleven camelCase keys, with explicit nulls and no dirty")
     func encodesExactKeysWithNulls() throws {
         let item = TodoItem(
             title: "Buy milk",
             createdAt: Date(timeIntervalSince1970: 1_800_000_000),
-            updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            sortOrder: -2.5
         )
         let json = try jsonObject(TodoWireDto(item))
 
         #expect(Set(json.keys) == [
             "id", "title", "notes", "isDone", "dueAt", "recurrence",
-            "createdAt", "updatedAt", "isDeleted", "serverSeq",
+            "createdAt", "updatedAt", "isDeleted", "serverSeq", "sortOrder",
         ])
         #expect(json["notes"] is NSNull)
         #expect(json["dueAt"] is NSNull)
         #expect(json["recurrence"] is NSNull)
         #expect(json["serverSeq"] is NSNull)
+        #expect(json["sortOrder"] as? Double == -2.5)
         #expect(workerAcceptsPushItem(json))
+    }
+
+    @Test("a row without sortOrder decodes to nil, maps to 0, and never resets a local order on apply")
+    func missingSortOrder() throws {
+        let response = try JSONDecoder().decode(ChangesResponse.self, from: fixtureData("changes-response"))
+        let dto = try #require(response.items.first)
+        #expect(dto.sortOrder == nil)
+        #expect(try dto.makeItem().sortOrder == 0)
+
+        let local = try dto.makeItem()
+        local.sortOrder = 4
+        try dto.apply(to: local)
+        #expect(local.sortOrder == 4)
+    }
+
+    @Test("an incoming sortOrder, including 0, replaces the local one")
+    func incomingSortOrderApplies() throws {
+        var dto = wire(updatedAt: at(1))
+        let local = try dto.makeItem()
+        local.sortOrder = 4
+
+        dto.sortOrder = 9
+        try dto.apply(to: local)
+        #expect(local.sortOrder == 9)
+
+        dto.sortOrder = 0
+        try dto.apply(to: local)
+        #expect(local.sortOrder == 0)
     }
 
     @Test("every fixture row survives the Worker's validity check after a round trip")

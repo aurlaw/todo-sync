@@ -340,3 +340,77 @@ struct SyncEngineLifecycleTests {
         #expect(await h.client.changeRequests == [0])
     }
 }
+
+@Suite("SyncEngine manual ordering")
+struct SyncEngineOrderingTests {
+    private let x = UUID(), y = UUID(), z = UUID()
+
+    /// One device's local copy of the same three synced rows: x=0, y=1, z=2.
+    @MainActor
+    private func device() throws -> Harness {
+        let h = try Harness()
+        for (id, title, order) in [(x, "x", 0.0), (y, "y", 1.0), (z, "z", 2.0)] {
+            h.main.insert(TodoItem(id: id, title: title, createdAt: at(1), updatedAt: at(1), dirty: false, serverSeq: 1, sortOrder: order))
+        }
+        try h.main.save()
+        return h
+    }
+
+    @MainActor
+    private func titles(_ h: Harness) throws -> [String] {
+        try h.reload()
+        return try h.main.fetch(FetchDescriptor<TodoItem>()).sorted(by: TodoItem.manualOrder).map(\.title)
+    }
+
+    @MainActor
+    private func move(_ id: UUID, on h: Harness, toOffset: Int, at seconds: TimeInterval) throws {
+        let store = TodoStore(context: h.main, clock: FixedTestClock(date: at(seconds)))
+        let ordered = try h.main.fetch(FetchDescriptor<TodoItem>()).sorted(by: TodoItem.manualOrder)
+        let index = try #require(ordered.firstIndex { $0.id == id })
+        try store.move(fromOffsets: [index], toOffset: toOffset, in: ordered)
+    }
+
+    @Test("two devices reorder different rows; after both sync each row is where its own device put it")
+    @MainActor
+    func twoDeviceMerge() async throws {
+        let a = try device()
+        let b = try device()
+
+        // A drags x to the tail; B drags z to the head. Neither has seen the other's move.
+        try move(x, on: a, toOffset: 3, at: 10)
+        try move(z, on: b, toOffset: 0, at: 20)
+
+        _ = try await a.engine.sync()
+        let pushedByA = try #require(await a.client.pushedChunks.first?.first)
+        #expect(pushedByA.id == x.uuidString.lowercased())
+        #expect(pushedByA.sortOrder == 3)
+
+        var xOnServer = pushedByA
+        xOnServer.serverSeq = 50
+        await b.client.setPages([ChangesResponse(items: [xOnServer], cursor: 50)])
+        _ = try await b.engine.sync()
+        let pushedByB = try #require(await b.client.pushedChunks.first?.first)
+        #expect(pushedByB.id == z.uuidString.lowercased())
+
+        var zOnServer = pushedByB
+        zOnServer.serverSeq = 51
+        await a.client.setPages([ChangesResponse(items: [zOnServer], cursor: 51)])
+        _ = try await a.engine.sync()
+
+        #expect(try titles(a) == ["z", "y", "x"])
+        #expect(try titles(b) == ["z", "y", "x"])
+    }
+
+    @Test("a pulled row with no sortOrder keeps the local order")
+    @MainActor
+    func pullWithoutOrderKeepsLocal() async throws {
+        let h = try device()
+        var row = wire(id: y, title: "y renamed", updatedAt: at(9), serverSeq: 7)
+        row.sortOrder = nil
+        await h.client.setPages([ChangesResponse(items: [row], cursor: 7)])
+
+        _ = try await h.engine.sync()
+
+        #expect(try titles(h) == ["x", "y renamed", "z"])
+    }
+}

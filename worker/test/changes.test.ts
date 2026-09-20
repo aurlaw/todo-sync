@@ -1,6 +1,6 @@
 import { exports } from "cloudflare:workers";
 import { it } from "vitest";
-import type { TodoDto } from "../src/types";
+import type { TodoDto, TodoPushDto } from "../src/types";
 
 const TEST_TOKEN = "test-token";
 
@@ -13,7 +13,7 @@ interface ChangesResponseBody {
   cursor: number;
 }
 
-function todo(id: string): TodoDto {
+function todo(id: string): TodoPushDto {
   const now = new Date().toISOString();
   return {
     id,
@@ -29,7 +29,7 @@ function todo(id: string): TodoDto {
   };
 }
 
-async function push(items: TodoDto[]): Promise<PushResponseBody> {
+async function push(items: TodoPushDto[]): Promise<PushResponseBody> {
   const response = await exports.default.fetch("https://example.com/push", {
     method: "POST",
     headers: { Authorization: `Bearer ${TEST_TOKEN}`, "content-type": "application/json" },
@@ -83,6 +83,15 @@ it("keeps the cursor unchanged when there are no new rows", async ({ expect }) =
   const result = await changes("?since=999999");
   expect(result.items).toHaveLength(0);
   expect(result.cursor).toBe(999999);
+});
+
+it("always includes a numeric sortOrder, even for rows pushed without one", async ({ expect }) => {
+  await push([todo("eeeeeeee-0000-0000-0000-000000000001")]);
+
+  const result = await changes("?since=0");
+  const found = result.items.find((item) => item.id === "eeeeeeee-0000-0000-0000-000000000001");
+  expect(found).toBeDefined();
+  expect(found!.sortOrder).toBe(0);
 });
 
 it("returns 400 for a negative since value", async ({ expect }) => {

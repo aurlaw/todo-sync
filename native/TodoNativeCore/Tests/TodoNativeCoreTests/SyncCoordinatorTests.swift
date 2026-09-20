@@ -94,3 +94,53 @@ struct SyncCoordinatorTests {
         #expect(await runner.syncCalls == 1)
     }
 }
+
+@Suite("SyncCoordinator afterSync")
+struct SyncCoordinatorAfterSyncTests {
+    @Test("runs after a completed sync, and a true result schedules a push")
+    @MainActor
+    func schedulesWhenChanged() async throws {
+        let runner = FakeRunner()
+        var calls = 0
+        let coordinator = SyncCoordinator(engine: runner, debounce: .milliseconds(20), afterSync: {
+            calls += 1
+            return calls == 1
+        })
+
+        await coordinator.syncNow()
+        try await Task.sleep(for: .milliseconds(300))
+
+        // The first cycle changed rows, so one more ran; the second changed nothing, so it stops.
+        #expect(await runner.syncCalls == 2)
+        #expect(calls == 2)
+    }
+
+    @Test("a false result does not schedule anything")
+    @MainActor
+    func quietWhenUnchanged() async throws {
+        let runner = FakeRunner()
+        let coordinator = SyncCoordinator(engine: runner, debounce: .milliseconds(20), afterSync: { false })
+
+        await coordinator.syncNow()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(await runner.syncCalls == 1)
+    }
+
+    @Test("does not run when the sync failed, and a throwing hook is swallowed")
+    @MainActor
+    func skippedOnFailure() async throws {
+        let runner = FakeRunner()
+        var calls = 0
+        let coordinator = SyncCoordinator(engine: runner, afterSync: { calls += 1; return false })
+
+        await runner.setResult(.failure(SyncError.notConfigured))
+        await coordinator.syncNow()
+        #expect(calls == 0)
+
+        struct Boom: Error {}
+        let throwing = SyncCoordinator(engine: FakeRunner(), afterSync: { throw Boom() })
+        await throwing.syncNow()
+        guard case .idle = throwing.status else { Issue.record("\(throwing.status)"); return }
+    }
+}

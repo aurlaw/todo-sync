@@ -25,7 +25,12 @@ struct TodoNativeApp: App {
 
         let client = URLSessionSyncClient(secrets: KeychainStore())
         let engine = SyncEngine(modelContainer: container, client: client)
-        _coordinator = State(initialValue: SyncCoordinator(engine: engine))
+        // Items that predate manual ordering are numbered once, after the first sync has caught this
+        // device up. The store here has no onMutation: the coordinator schedules the push itself.
+        let context = container.mainContext
+        _coordinator = State(initialValue: SyncCoordinator(engine: engine, afterSync: {
+            try TodoStore(context: context).backfillSortOrderIfNeeded()
+        }))
     }
 
     var body: some Scene {

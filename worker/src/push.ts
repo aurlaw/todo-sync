@@ -1,11 +1,11 @@
-import type { Env, TodoDto } from "./types";
+import type { Env, TodoPushDto } from "./types";
 
 interface PushResult {
   applied: Array<{ id: string; serverSeq: number }>;
   rejected: Array<{ id: string; reason: string }>;
 }
 
-function isValidTodoDto(value: unknown): value is TodoDto {
+function isValidTodoDto(value: unknown): value is TodoPushDto {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -19,7 +19,8 @@ function isValidTodoDto(value: unknown): value is TodoDto {
     (v.recurrence === null || typeof v.recurrence === "string") &&
     typeof v.createdAt === "string" &&
     typeof v.updatedAt === "string" &&
-    typeof v.isDeleted === "boolean"
+    typeof v.isDeleted === "boolean" &&
+    (v.sortOrder === undefined || v.sortOrder === null || (typeof v.sortOrder === "number" && Number.isFinite(v.sortOrder)))
   );
 }
 
@@ -35,11 +36,14 @@ async function nextServerSeq(db: D1Database): Promise<number> {
   return Number(row.value);
 }
 
-async function upsertTodo(db: D1Database, item: TodoDto, serverSeq: number): Promise<boolean> {
+// sort_order binds as ?11 (raw, nullable) and is used twice: a new row with no order gets 0, and an
+// update with no order keeps the stored value, so a client that omits sortOrder can't reset it.
+// An explicit 0 still overwrites. The updated_at guard below applies to sort_order like any column.
+async function upsertTodo(db: D1Database, item: TodoPushDto, serverSeq: number): Promise<boolean> {
   const result = await db
     .prepare(
-      `INSERT INTO todos (id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO todos (id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq, sort_order)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, COALESCE(?11, 0))
        ON CONFLICT(id) DO UPDATE SET
          title = excluded.title,
          notes = excluded.notes,
@@ -48,7 +52,8 @@ async function upsertTodo(db: D1Database, item: TodoDto, serverSeq: number): Pro
          recurrence = excluded.recurrence,
          updated_at = excluded.updated_at,
          is_deleted = excluded.is_deleted,
-         server_seq = excluded.server_seq
+         server_seq = excluded.server_seq,
+         sort_order = COALESCE(?11, todos.sort_order)
        WHERE excluded.updated_at > todos.updated_at`,
     )
     .bind(
@@ -62,6 +67,7 @@ async function upsertTodo(db: D1Database, item: TodoDto, serverSeq: number): Pro
       item.updatedAt,
       item.isDeleted ? 1 : 0,
       serverSeq,
+      item.sortOrder ?? null,
     )
     .run();
 

@@ -1,6 +1,6 @@
 import { exports } from "cloudflare:workers";
 import { it } from "vitest";
-import type { TodoDto } from "../src/types";
+import type { TodoDto, TodoPushDto } from "../src/types";
 
 const TEST_TOKEN = "test-token";
 
@@ -14,7 +14,8 @@ interface ChangesResponseBody {
   cursor: number;
 }
 
-function todo(overrides: Partial<TodoDto> & Pick<TodoDto, "id">): TodoDto {
+// Omits sortOrder unless overridden, like a client that predates N8.
+function todo(overrides: Partial<TodoPushDto> & Pick<TodoPushDto, "id">): TodoPushDto {
   const now = new Date().toISOString();
   return {
     title: "Buy milk",
@@ -30,7 +31,7 @@ function todo(overrides: Partial<TodoDto> & Pick<TodoDto, "id">): TodoDto {
   };
 }
 
-async function push(items: TodoDto[]) {
+async function push(items: TodoPushDto[]) {
   return exports.default.fetch("https://example.com/push", {
     method: "POST",
     headers: {
@@ -101,11 +102,78 @@ it("rejects a stale update as a no-op", async ({ expect }) => {
 });
 
 it("rejects malformed items without crashing the batch", async ({ expect }) => {
-  const response = await push([{ id: "not-a-full-todo" } as unknown as TodoDto]);
+  const response = await push([{ id: "not-a-full-todo" } as unknown as TodoPushDto]);
   expect(response.status).toBe(200);
 
   const body = (await response.json()) as PushResponseBody;
   expect(body.rejected).toContainEqual({ id: "not-a-full-todo", reason: "invalid" });
+});
+
+const T1 = "2026-03-01T00:00:00.000Z";
+const T2 = "2026-03-02T00:00:00.000Z";
+const T3 = "2026-03-03T00:00:00.000Z";
+
+async function sortOrderOf(id: string): Promise<number | undefined> {
+  const changes = await fetchChanges();
+  return changes.items.find((item) => item.id === id)?.sortOrder;
+}
+
+it("stores and returns a sortOrder", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000001";
+  await push([todo({ id, sortOrder: 1.5 })]);
+  expect(await sortOrderOf(id)).toBe(1.5);
+});
+
+it("defaults sortOrder to 0 when a new row omits it", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000002";
+  await push([todo({ id })]);
+  expect(await sortOrderOf(id)).toBe(0);
+});
+
+it("keeps the stored sortOrder when a newer push omits it", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000003";
+  await push([todo({ id, title: "Old", createdAt: T1, updatedAt: T1, sortOrder: 5 })]);
+
+  const response = await push([todo({ id, title: "Edited by old client", createdAt: T1, updatedAt: T2 })]);
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.applied.map((a) => a.id)).toContain(id);
+
+  const found = (await fetchChanges()).items.find((item) => item.id === id);
+  expect(found?.title).toBe("Edited by old client");
+  expect(found?.sortOrder).toBe(5);
+});
+
+it("treats an explicit null sortOrder like an omitted one", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000004";
+  await push([todo({ id, createdAt: T1, updatedAt: T1, sortOrder: 7 })]);
+  await push([todo({ id, createdAt: T1, updatedAt: T2, sortOrder: null })]);
+  expect(await sortOrderOf(id)).toBe(7);
+});
+
+it("rejects a non-numeric sortOrder as invalid", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000005";
+  const response = await push([todo({ id, sortOrder: "3" as unknown as number })]);
+
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.rejected).toContainEqual({ id, reason: "invalid" });
+  expect(await sortOrderOf(id)).toBeUndefined();
+});
+
+it("leaves the stored sortOrder alone when a stale push carries a different one", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000006";
+  await push([todo({ id, createdAt: T1, updatedAt: T3, sortOrder: 2 })]);
+
+  const response = await push([todo({ id, createdAt: T1, updatedAt: T1, sortOrder: 99 })]);
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.rejected).toContainEqual({ id, reason: "stale" });
+  expect(await sortOrderOf(id)).toBe(2);
+});
+
+it("lets an explicit 0 overwrite a previous non-zero sortOrder", async ({ expect }) => {
+  const id = "dddddddd-0000-0000-0000-000000000007";
+  await push([todo({ id, createdAt: T1, updatedAt: T1, sortOrder: 4 })]);
+  await push([todo({ id, createdAt: T1, updatedAt: T2, sortOrder: 0 })]);
+  expect(await sortOrderOf(id)).toBe(0);
 });
 
 it("returns 400 for a malformed request body", async ({ expect }) => {

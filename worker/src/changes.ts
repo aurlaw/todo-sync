@@ -26,7 +26,7 @@ export async function handleChanges(request: Request, env: Env): Promise<Respons
   }
 
   const { results } = await env.DB.prepare(
-    `SELECT id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq
+    `SELECT id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq, sort_order
      FROM todos
      WHERE server_seq > ?
      ORDER BY server_seq ASC

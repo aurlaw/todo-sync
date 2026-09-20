@@ -19,7 +19,8 @@ extension TodoWireDto {
             createdAt: Iso8601.format(item.createdAt),
             updatedAt: Iso8601.format(item.updatedAt),
             isDeleted: item.isSoftDeleted,
-            serverSeq: item.serverSeq
+            serverSeq: item.serverSeq,
+            sortOrder: item.sortOrder
         )
     }
 
@@ -38,7 +39,8 @@ extension TodoWireDto {
             updatedAt: parsed.updated,
             isSoftDeleted: isDeleted,
             dirty: false,
-            serverSeq: serverSeq
+            serverSeq: serverSeq,
+            sortOrder: sortOrder ?? 0
         )
     }
 
@@ -56,6 +58,8 @@ extension TodoWireDto {
         item.isSoftDeleted = isDeleted
         item.dirty = false
         item.serverSeq = serverSeq
+        // A row with no order (old Worker, never-ordered) must not reset the local one.
+        if let sortOrder { item.sortOrder = sortOrder }
     }
 
     private func parse() throws -> (uuid: UUID, created: Date, updated: Date, due: Date?) {
