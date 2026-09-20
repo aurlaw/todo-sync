@@ -10,6 +10,7 @@ import SwiftData
 import TodoNativeCore
 
 enum Category: String, CaseIterable, Identifiable {
+    case active
     case today
     case upcoming
     case all
@@ -19,6 +20,7 @@ enum Category: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .active: "Active"
         case .today: "Today"
         case .upcoming: "Upcoming"
         case .all: "All"
@@ -28,6 +30,7 @@ enum Category: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .active: "circle"
         case .today: "sun.max"
         case .upcoming: "calendar"
         case .all: "tray.full"
@@ -35,9 +38,12 @@ enum Category: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Today includes overdue items; Today/Upcoming exclude completed ones.
+    /// Active is every item not yet completed, dated or not. Today includes overdue items;
+    /// Today/Upcoming exclude completed ones.
     func includes(_ item: TodoItem, now: Date = .now, calendar: Calendar = .current) -> Bool {
         switch self {
+        case .active:
+            return !item.isDone
         case .all:
             return true
         case .done:
@@ -78,7 +84,7 @@ struct ContentView: View {
     )
     private var items: [TodoItem]
 
-    @State private var category: Category? = .all
+    @State private var category: Category? = .active
     @State private var selectedItemID: UUID?
     @State private var sheet: Sheet?
 
@@ -89,7 +95,7 @@ struct ContentView: View {
     }
 
     private var visibleItems: [TodoItem] {
-        let category = category ?? .all
+        let category = category ?? .active
         return items.filter { category.includes($0) }
     }
 
@@ -143,7 +149,12 @@ struct ContentView: View {
             row(for: item)
                 .tag(item.id)
         }
-        .navigationTitle((category ?? .all).title)
+        .navigationTitle((category ?? .active).title)
+        #if os(iOS)
+        // A large title renders blank on iPhone when the list is the launch screen (default
+        // category preselected) and it has rows; inline shows reliably.
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .overlay {
             if visibleItems.isEmpty {
                 ContentUnavailableView("Nothing here", systemImage: "checklist")
