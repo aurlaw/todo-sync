@@ -8,16 +8,61 @@
 
 /* Begin PBXBuildFile section */
 		4566CBCD30576E16004F15C4 /* TodoNativeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4566CBCC30576E16004F15C4 /* TodoNativeCore */; };
+		45CFB6603060763C00CFC0BA /* TodoNativeShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		45CFB6693060767900CFC0BA /* TodoNativeCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45CFB6683060767900CFC0BA /* TodoNativeCore */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		45CFB65E3060763C00CFC0BA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4566CBB530576D86004F15C4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 45CFB6553060763C00CFC0BA;
+			remoteInfo = TodoNativeShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		45CFB6653060763C00CFC0BA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				45CFB6603060763C00CFC0BA /* TodoNativeShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		4566CBBD30576D86004F15C4 /* TodoNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodoNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TodoNativeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		45CFB6613060763C00CFC0BA /* Exceptions for "TodoNativeShare" folder in "TodoNativeShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 45CFB6553060763C00CFC0BA /* TodoNativeShare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4566CBBF30576D86004F15C4 /* TodoNative */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TodoNative;
+			sourceTree = "<group>";
+		};
+		45CFB6573060763C00CFC0BA /* TodoNativeShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				45CFB6613060763C00CFC0BA /* Exceptions for "TodoNativeShare" folder in "TodoNativeShare" target */,
+			);
+			path = TodoNativeShare;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +76,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		45CFB6533060763C00CFC0BA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45CFB6693060767900CFC0BA /* TodoNativeCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +91,8 @@
 			isa = PBXGroup;
 			children = (
 				4566CBBF30576D86004F15C4 /* TodoNative */,
+				45CFB6573060763C00CFC0BA /* TodoNativeShare */,
+				45CFB6673060767900CFC0BA /* Frameworks */,
 				4566CBBE30576D86004F15C4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,8 +101,16 @@
 			isa = PBXGroup;
 			children = (
 				4566CBBD30576D86004F15C4 /* TodoNative.app */,
+				45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		45CFB6673060767900CFC0BA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -60,10 +123,12 @@
 				4566CBB930576D86004F15C4 /* Sources */,
 				4566CBBA30576D86004F15C4 /* Frameworks */,
 				4566CBBB30576D86004F15C4 /* Resources */,
+				45CFB6653060763C00CFC0BA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				45CFB65F3060763C00CFC0BA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4566CBBF30576D86004F15C4 /* TodoNative */,
@@ -76,6 +141,29 @@
 			productReference = 4566CBBD30576D86004F15C4 /* TodoNative.app */;
 			productType = "com.apple.product-type.application";
 		};
+		45CFB6553060763C00CFC0BA /* TodoNativeShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 45CFB6623060763C00CFC0BA /* Build configuration list for PBXNativeTarget "TodoNativeShare" */;
+			buildPhases = (
+				45CFB6523060763C00CFC0BA /* Sources */,
+				45CFB6533060763C00CFC0BA /* Frameworks */,
+				45CFB6543060763C00CFC0BA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				45CFB6573060763C00CFC0BA /* TodoNativeShare */,
+			);
+			name = TodoNativeShare;
+			packageProductDependencies = (
+				45CFB6683060767900CFC0BA /* TodoNativeCore */,
+			);
+			productName = TodoNativeShare;
+			productReference = 45CFB6563060763C00CFC0BA /* TodoNativeShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -87,6 +175,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					4566CBBC30576D86004F15C4 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					45CFB6553060763C00CFC0BA = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -109,12 +200,20 @@
 			projectRoot = "";
 			targets = (
 				4566CBBC30576D86004F15C4 /* TodoNative */,
+				45CFB6553060763C00CFC0BA /* TodoNativeShare */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4566CBBB30576D86004F15C4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		45CFB6543060763C00CFC0BA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -131,7 +230,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		45CFB6523060763C00CFC0BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		45CFB65F3060763C00CFC0BA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 45CFB6553060763C00CFC0BA /* TodoNativeShare */;
+			targetProxy = 45CFB65E3060763C00CFC0BA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4566CBC630576D86004F15C4 /* Debug */ = {
@@ -255,9 +370,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TodoNative/TodoNative.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = T54JASTD4Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -311,9 +427,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TodoNative/TodoNative.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = T54JASTD4Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -362,6 +479,69 @@
 			};
 			name = Release;
 		};
+		45CFB6633060763C00CFC0BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TodoNativeShare/TodoNativeShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 8;
+				DEVELOPMENT_TEAM = T54JASTD4Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNativeShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodoNative;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aurlaw.TodoNative.TodoNativeShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		45CFB6643060763C00CFC0BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TodoNativeShare/TodoNativeShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 8;
+				DEVELOPMENT_TEAM = T54JASTD4Z;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodoNativeShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodoNative;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aurlaw.TodoNative.TodoNativeShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -383,6 +563,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		45CFB6623060763C00CFC0BA /* Build configuration list for PBXNativeTarget "TodoNativeShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45CFB6633060763C00CFC0BA /* Debug */,
+				45CFB6643060763C00CFC0BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -395,6 +584,11 @@
 /* Begin XCSwiftPackageProductDependency section */
 		4566CBCC30576E16004F15C4 /* TodoNativeCore */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = TodoNativeCore;
+		};
+		45CFB6683060767900CFC0BA /* TodoNativeCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4566CBCB30576E16004F15C4 /* XCLocalSwiftPackageReference "../TodoNativeCore" */;
 			productName = TodoNativeCore;
 		};
 /* End XCSwiftPackageProductDependency section */

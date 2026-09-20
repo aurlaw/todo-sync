@@ -21,7 +21,7 @@ struct TodoDetailView: View {
                     .font(.title2)
                     .strikethrough(item.isDone)
                 if let notes = item.notes, !notes.isEmpty {
-                    Text(notes)
+                    Text(Linkify.attributed(notes))
                         .foregroundStyle(.secondary)
                 }
             }
