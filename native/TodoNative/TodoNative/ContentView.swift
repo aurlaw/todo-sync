@@ -162,15 +162,6 @@ struct ContentView: View {
             .tag(category)
         }
         .navigationTitle("Todo")
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    sheet = .settings
-                } label: {
-                    Label("Settings", systemImage: "gearshape")
-                }
-            }
-        }
     }
 
     private var itemList: some View {
@@ -208,6 +199,13 @@ struct ContentView: View {
                     Label("New", systemImage: "plus")
                 }
                 .keyboardShortcut("n")
+            }
+            ToolbarItem {
+                Button {
+                    sheet = .settings
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
             }
             #if os(iOS)
             // Drag handles appear in edit mode on iOS; macOS drags rows directly.
