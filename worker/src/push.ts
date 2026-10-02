@@ -1,4 +1,5 @@
 import type { Env, TodoPushDto } from "./types";
+import { isLowercaseUuid } from "./types";
 
 interface PushResult {
   applied: Array<{ id: string; serverSeq: number }>;
@@ -20,11 +21,13 @@ function isValidTodoDto(value: unknown): value is TodoPushDto {
     typeof v.createdAt === "string" &&
     typeof v.updatedAt === "string" &&
     typeof v.isDeleted === "boolean" &&
-    (v.sortOrder === undefined || v.sortOrder === null || (typeof v.sortOrder === "number" && Number.isFinite(v.sortOrder)))
+    (v.sortOrder === undefined || v.sortOrder === null || (typeof v.sortOrder === "number" && Number.isFinite(v.sortOrder))) &&
+    (v.categoryId === undefined || v.categoryId === null || isLowercaseUuid(v.categoryId))
   );
 }
 
-async function nextServerSeq(db: D1Database): Promise<number> {
+// The one sequence counter, shared by todos and categories so values never collide across tables.
+export async function nextServerSeq(db: D1Database): Promise<number> {
   const row = await db
     .prepare("UPDATE meta SET value = value + 1 WHERE key = 'max_server_seq' RETURNING value")
     .first<{ value: string }>();
@@ -39,11 +42,16 @@ async function nextServerSeq(db: D1Database): Promise<number> {
 // sort_order binds as ?11 (raw, nullable) and is used twice: a new row with no order gets 0, and an
 // update with no order keeps the stored value, so a client that omits sortOrder can't reset it.
 // An explicit 0 still overwrites. The updated_at guard below applies to sort_order like any column.
+//
+// category_id can't use COALESCE: an explicit null is meaningful (move to Unassigned) and must
+// overwrite, while a missing key (a client that predates N9b) must keep the stored value. So ?12 is
+// the value and ?13 a presence flag, 1 when the key was on the incoming object. A new row with no
+// key is Unassigned.
 async function upsertTodo(db: D1Database, item: TodoPushDto, serverSeq: number): Promise<boolean> {
   const result = await db
     .prepare(
-      `INSERT INTO todos (id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq, sort_order)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, COALESCE(?11, 0))
+      `INSERT INTO todos (id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq, sort_order, category_id)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, COALESCE(?11, 0), ?12)
        ON CONFLICT(id) DO UPDATE SET
          title = excluded.title,
          notes = excluded.notes,
@@ -53,7 +61,8 @@ async function upsertTodo(db: D1Database, item: TodoPushDto, serverSeq: number):
          updated_at = excluded.updated_at,
          is_deleted = excluded.is_deleted,
          server_seq = excluded.server_seq,
-         sort_order = COALESCE(?11, todos.sort_order)
+         sort_order = COALESCE(?11, todos.sort_order),
+         category_id = CASE WHEN ?13 = 1 THEN ?12 ELSE todos.category_id END
        WHERE excluded.updated_at > todos.updated_at`,
     )
     .bind(
@@ -68,6 +77,8 @@ async function upsertTodo(db: D1Database, item: TodoPushDto, serverSeq: number):
       item.isDeleted ? 1 : 0,
       serverSeq,
       item.sortOrder ?? null,
+      item.categoryId ?? null,
+      "categoryId" in item ? 1 : 0,
     )
     .run();
 

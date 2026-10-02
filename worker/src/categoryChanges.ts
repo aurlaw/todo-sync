@@ -1,10 +1,10 @@
-import type { Env, TodoRow } from "./types";
-import { rowToDto } from "./types";
+import type { CategoryRow, Env } from "./types";
+import { categoryRowToDto } from "./types";
 
 const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 500;
 
-export async function handleChanges(request: Request, env: Env): Promise<Response> {
+export async function handleCategoryChanges(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
 
   const sinceParam = url.searchParams.get("since");
@@ -26,16 +26,16 @@ export async function handleChanges(request: Request, env: Env): Promise<Respons
   }
 
   const { results } = await env.DB.prepare(
-    `SELECT id, title, notes, is_done, due_at, recurrence, created_at, updated_at, is_deleted, server_seq, sort_order, category_id
-     FROM todos
+    `SELECT id, name, parent_id, color, sort_order, created_at, updated_at, is_deleted, server_seq
+     FROM categories
      WHERE server_seq > ?
      ORDER BY server_seq ASC
      LIMIT ?`,
   )
     .bind(since, limit)
-    .all<TodoRow>();
+    .all<CategoryRow>();
 
-  const items = results.map(rowToDto);
+  const items = results.map(categoryRowToDto);
   const cursor = items.length > 0 ? items[items.length - 1]!.serverSeq : since;
 
   return new Response(JSON.stringify({ items, cursor }), {

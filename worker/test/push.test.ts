@@ -176,6 +176,79 @@ it("lets an explicit 0 overwrite a previous non-zero sortOrder", async ({ expect
   expect(await sortOrderOf(id)).toBe(0);
 });
 
+const CATEGORY_A = "cccccccc-aaaa-4000-8000-000000000001";
+const CATEGORY_B = "cccccccc-aaaa-4000-8000-000000000002";
+
+// undefined means the row isn't there at all; null is a stored Unassigned.
+async function categoryIdOf(id: string): Promise<string | null | undefined> {
+  const changes = await fetchChanges();
+  const found = changes.items.find((item) => item.id === id);
+  return found === undefined ? undefined : found.categoryId;
+}
+
+it("stores and returns a categoryId", async ({ expect }) => {
+  const id = "ffffffff-0000-0000-0000-000000000001";
+  await push([todo({ id, categoryId: CATEGORY_A })]);
+  expect(await categoryIdOf(id)).toBe(CATEGORY_A);
+});
+
+it("defaults categoryId to null when a new row omits it", async ({ expect }) => {
+  const id = "ffffffff-0000-0000-0000-000000000002";
+  await push([todo({ id })]);
+  expect(await categoryIdOf(id)).toBeNull();
+});
+
+it("keeps the stored categoryId when a newer push omits the key", async ({ expect }) => {
+  const id = "ffffffff-0000-0000-0000-000000000003";
+  await push([todo({ id, title: "Old", createdAt: T1, updatedAt: T1, categoryId: CATEGORY_A })]);
+
+  const response = await push([todo({ id, title: "Edited by old client", createdAt: T1, updatedAt: T2 })]);
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.applied.map((a) => a.id)).toContain(id);
+
+  const found = (await fetchChanges()).items.find((item) => item.id === id);
+  expect(found?.title).toBe("Edited by old client");
+  expect(found?.categoryId).toBe(CATEGORY_A);
+});
+
+it("lets an explicit null categoryId overwrite a stored one", async ({ expect }) => {
+  const id = "ffffffff-0000-0000-0000-000000000004";
+  await push([todo({ id, createdAt: T1, updatedAt: T1, categoryId: CATEGORY_A })]);
+  await push([todo({ id, createdAt: T1, updatedAt: T2, categoryId: null })]);
+  expect(await categoryIdOf(id)).toBeNull();
+});
+
+it("rejects an uppercase or non-UUID categoryId as invalid", async ({ expect }) => {
+  const upper = "ffffffff-0000-0000-0000-000000000005";
+  const notUuid = "ffffffff-0000-0000-0000-000000000006";
+  const notString = "ffffffff-0000-0000-0000-000000000007";
+
+  const response = await push([
+    todo({ id: upper, categoryId: CATEGORY_A.toUpperCase() }),
+    todo({ id: notUuid, categoryId: "work" }),
+    todo({ id: notString, categoryId: 7 as unknown as string }),
+  ]);
+
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.applied).toHaveLength(0);
+  expect(body.rejected).toEqual([
+    { id: upper, reason: "invalid" },
+    { id: notUuid, reason: "invalid" },
+    { id: notString, reason: "invalid" },
+  ]);
+  expect(await categoryIdOf(upper)).toBeUndefined();
+});
+
+it("leaves the stored categoryId alone when a stale push carries a different one", async ({ expect }) => {
+  const id = "ffffffff-0000-0000-0000-000000000008";
+  await push([todo({ id, createdAt: T1, updatedAt: T3, categoryId: CATEGORY_A })]);
+
+  const response = await push([todo({ id, createdAt: T1, updatedAt: T1, categoryId: CATEGORY_B })]);
+  const body = (await response.json()) as PushResponseBody;
+  expect(body.rejected).toContainEqual({ id, reason: "stale" });
+  expect(await categoryIdOf(id)).toBe(CATEGORY_A);
+});
+
 it("returns 400 for a malformed request body", async ({ expect }) => {
   const response = await exports.default.fetch("https://example.com/push", {
     method: "POST",
