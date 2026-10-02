@@ -49,6 +49,7 @@ struct TodoDetailView: View {
         .toolbar {
             ToolbarItem {
                 Button("Edit", action: onEdit)
+                    .accentFilled()
             }
         }
     }

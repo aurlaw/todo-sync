@@ -84,6 +84,9 @@ struct ContentView: View {
     @State private var category: Category? = .active
     @State private var selectedItemID: UUID?
     @State private var sheet: Sheet?
+    #if os(iOS)
+    @State private var editMode: EditMode = .inactive
+    #endif
 
     private let secrets: any SecretStore = KeychainStore()
 
@@ -174,6 +177,8 @@ struct ContentView: View {
         }
         .navigationTitle((category ?? .active).title)
         #if os(iOS)
+        .environment(\.editMode, $editMode)
+        .onChange(of: category) { editMode = .inactive }
         // A large title renders blank on iPhone when the list is the launch screen (default
         // category preselected) and it has rows; inline shows reliably.
         .navigationBarTitleDisplayMode(.inline)
@@ -197,20 +202,30 @@ struct ContentView: View {
                     sheet = .new
                 } label: {
                     Label("New", systemImage: "plus")
+                        .foregroundStyle(.tint)
                 }
                 .keyboardShortcut("n")
+                .tint(.appAccent)
             }
             ToolbarItem {
                 Button {
                     sheet = .settings
                 } label: {
                     Label("Settings", systemImage: "gearshape")
+                        .foregroundStyle(.tint)
                 }
+                .tint(.appAccent)
             }
             #if os(iOS)
             // Drag handles appear in edit mode on iOS; macOS drags rows directly.
             if canReorder {
-                ToolbarItem { EditButton() }
+                // Not `EditButton`: it ignores button styles in an iOS 26 toolbar, so it can't be filled.
+                ToolbarItem {
+                    Button(editMode.isEditing ? "Done" : "Edit") {
+                        withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+                    }
+                    .accentFilled()
+                }
             }
             #endif
         }
@@ -319,6 +334,24 @@ struct ContentView: View {
     private func delete(_ item: TodoItem) {
         try? store.softDelete(item)
         if selectedItemID == item.id { selectedItemID = nil }
+    }
+}
+
+extension Color {
+    /// The asset-catalog accent, named explicitly: iOS 26 toolbars draw their items monochrome
+    /// and ignore the inherited accent, so toolbar buttons need it passed to `.tint`.
+    static let appAccent = Color("AccentColor")
+}
+
+extension View {
+    /// A toolbar button filled with the accent colour, with white text. An iOS 26 toolbar ignores
+    /// `.borderedProminent` and needs the glass style; macOS takes the bordered one.
+    func accentFilled() -> some View {
+        #if os(iOS)
+        buttonStyle(.glassProminent).tint(.appAccent)
+        #else
+        buttonStyle(.borderedProminent).tint(.appAccent)
+        #endif
     }
 }
 

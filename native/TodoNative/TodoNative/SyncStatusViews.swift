@@ -20,6 +20,7 @@ struct SyncStatusButton: View {
                 ProgressView().controlSize(.small)
             case .idle:
                 Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(.tint)
             case .notConfigured:
                 Label("Sync not configured", systemImage: "exclamationmark.icloud")
                     .foregroundStyle(.secondary)
@@ -28,9 +29,19 @@ struct SyncStatusButton: View {
                     .foregroundStyle(.red)
             }
         }
+        .tint(tint)
         .keyboardShortcut("r")
         .disabled(status == .syncing)
         .help(helpText)
+    }
+
+    /// Set on the button itself, because an iOS toolbar ignores a colour set on the label.
+    private var tint: Color? {
+        switch status {
+        case .idle: .appAccent
+        case .failed: .red
+        case .syncing, .notConfigured: nil
+        }
     }
 
     private var helpText: String {
