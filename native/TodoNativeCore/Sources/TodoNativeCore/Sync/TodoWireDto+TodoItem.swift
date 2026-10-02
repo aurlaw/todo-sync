@@ -20,7 +20,8 @@ extension TodoWireDto {
             updatedAt: Iso8601.format(item.updatedAt),
             isDeleted: item.isSoftDeleted,
             serverSeq: item.serverSeq,
-            sortOrder: item.sortOrder
+            sortOrder: item.sortOrder,
+            categoryId: item.categoryId?.uuidString.lowercased()
         )
     }
 
@@ -40,7 +41,8 @@ extension TodoWireDto {
             isSoftDeleted: isDeleted,
             dirty: false,
             serverSeq: serverSeq,
-            sortOrder: sortOrder ?? 0
+            sortOrder: sortOrder ?? 0,
+            categoryId: parsed.category
         )
     }
 
@@ -60,9 +62,11 @@ extension TodoWireDto {
         item.serverSeq = serverSeq
         // A row with no order (old Worker, never-ordered) must not reset the local one.
         if let sortOrder { item.sortOrder = sortOrder }
+        // Likewise a row with no `categoryId` key at all; an explicit null does move it to Unassigned.
+        if hasCategoryId { item.categoryId = parsed.category }
     }
 
-    private func parse() throws -> (uuid: UUID, created: Date, updated: Date, due: Date?) {
+    private func parse() throws -> (uuid: UUID, created: Date, updated: Date, due: Date?, category: UUID?) {
         guard let uuid = UUID(uuidString: id) else { throw WireError.invalidID(id) }
         guard let created = Iso8601.parse(createdAt) else {
             throw WireError.invalidDate(field: "createdAt", value: createdAt)
@@ -77,7 +81,12 @@ extension TodoWireDto {
             }
             due = parsedDue
         }
-        return (uuid, created, updated, due)
+        var category: UUID?
+        if let categoryId {
+            guard let parsedCategory = UUID(uuidString: categoryId) else { throw WireError.invalidID(categoryId) }
+            category = parsedCategory
+        }
+        return (uuid, created, updated, due, category)
     }
 
     private static func encodeRecurrence(_ rule: RecurrenceRule) -> String? {

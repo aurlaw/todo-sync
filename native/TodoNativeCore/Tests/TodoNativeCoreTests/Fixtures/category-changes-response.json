@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "name": "Work",
+      "parentId": null,
+      "color": "#1a2b3c",
+      "sortOrder": 0,
+      "createdAt": "2026-10-02T15:04:05.1234560+00:00",
+      "updatedAt": "2026-10-02T15:04:05.1234560+00:00",
+      "isDeleted": false,
+      "serverSeq": 4
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000002",
+      "name": "Clients",
+      "parentId": "a0000000-0000-4000-8000-000000000001",
+      "color": null,
+      "sortOrder": 2.5,
+      "createdAt": "2026-10-02T15:04:06.0000000+00:00",
+      "updatedAt": "2026-10-02T16:00:00.0000000+00:00",
+      "isDeleted": true,
+      "serverSeq": 6
+    }
+  ],
+  "cursor": 6
+}

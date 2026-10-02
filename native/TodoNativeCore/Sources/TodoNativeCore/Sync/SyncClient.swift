@@ -31,4 +31,6 @@ public protocol SyncClient: Sendable {
     func baseURL() async throws -> URL
     func push(_ items: [TodoWireDto]) async throws -> PushResponse
     func changes(since: Int64, limit: Int) async throws -> ChangesResponse
+    func pushCategories(_ items: [CategoryWireDto]) async throws -> PushResponse
+    func categoryChanges(since: Int64, limit: Int) async throws -> CategoryChangesResponse
 }

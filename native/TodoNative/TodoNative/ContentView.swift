@@ -61,14 +61,23 @@ private enum Sheet: Identifiable {
     case new
     case existing(TodoItem)
     case settings
+    case categories
 
     var id: String {
         switch self {
         case .new: "new"
         case .existing(let item): item.id.uuidString
         case .settings: "settings"
+        case .categories: "categories"
         }
     }
+}
+
+/// "Added to Work" / "Moved to Work": shown when a save leaves the item outside the list on screen.
+private struct FiledBanner: Identifiable, Equatable {
+    let id = UUID()
+    let text: String
+    let destination: CategorySelection
 }
 
 struct ContentView: View {
@@ -80,10 +89,16 @@ struct ContentView: View {
         sort: [SortDescriptor(\TodoItem.sortOrder), SortDescriptor(\TodoItem.createdAt, order: .reverse)]
     )
     private var items: [TodoItem]
+    /// Every row, deleted ones included; `CategoryTree` applies the display rule.
+    @Query private var categories: [TodoCategory]
 
     @State private var category: Category? = .active
     @State private var selectedItemID: UUID?
     @State private var sheet: Sheet?
+    /// This device's active category as stored, which may name a category that no longer resolves;
+    /// `selection` is what is actually shown.
+    @State private var activeCategoryID: UUID? = ActiveCategoryStore().storedID
+    @State private var banner: FiledBanner?
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
     #endif
@@ -97,10 +112,25 @@ struct ContentView: View {
         })
     }
 
-    /// Active and All are the manually ordered lists; the rest sort by what defines them.
+    private var tree: CategoryTree { CategoryTree(categories) }
+
+    /// Falls back to Unassigned while the stored category does not resolve (deleted on the other
+    /// device, or not pulled yet).
+    private var selection: CategorySelection {
+        ActiveCategoryStore.effectiveSelection(storedID: activeCategoryID, in: tree)
+    }
+
+    /// The active category's colour, or the app accent for Unassigned and uncoloured categories.
+    private var tint: Color {
+        CategoryColor.tint(for: tree.resolve(selection.categoryID)) ?? .appAccent
+    }
+
+    /// The active category first, then the sidebar rule. Active and All are the manually ordered
+    /// lists; the rest sort by what defines them.
     private var visibleItems: [TodoItem] {
         let category = category ?? .active
-        let filtered = items.filter { category.includes($0) }
+        let (tree, selection) = (tree, selection)
+        let filtered = items.filter { TodoFilter.isInCategory($0, selection, tree: tree) && category.includes($0) }
         switch category {
         case .active, .all:
             return filtered.sorted(by: TodoItem.manualOrder)
@@ -145,13 +175,17 @@ struct ContentView: View {
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case .new:
-                TodoEditView(store: store, item: nil)
+                TodoEditView(store: store, item: nil, tree: tree, defaultCategoryID: selection.categoryID, onSaved: didSave)
             case .existing(let item):
-                TodoEditView(store: store, item: item)
+                TodoEditView(store: store, item: item, tree: tree, defaultCategoryID: nil, onSaved: didSave)
             case .settings:
-                SettingsView(secrets: secrets)
+                SettingsView(secrets: secrets, onManageCategories: { self.sheet = .categories })
+            case .categories:
+                CategoryManageView(store: store)
             }
         }
+        // After `.sheet`, so the sheets take the category's colour too.
+        .tint(tint)
     }
 
     private var sidebar: some View {
@@ -189,11 +223,39 @@ struct ContentView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            SyncStatusBanner(status: coordinator.status)
+            VStack(spacing: 0) {
+                if let banner {
+                    filedBanner(banner)
+                }
+                SyncStatusBanner(status: coordinator.status)
+            }
         }
+        .task(id: banner?.id) {
+            guard banner != nil else { return }
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled { withAnimation { banner = nil } }
+        }
+        #if os(iOS)
+        // A row of its own under the navigation bar, not a toolbar item: the bar's title slot has no room
+        // left beside the four trailing buttons on an iPhone, and the switcher did not appear there.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                categoryMenu
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(.bar)
+        }
+        #endif
         .toolbar {
+            #if os(macOS)
+            ToolbarItem(placement: .navigation) {
+                categoryMenu
+            }
+            #endif
             ToolbarItem {
-                SyncStatusButton(status: coordinator.status) {
+                SyncStatusButton(status: coordinator.status, accent: tint) {
                     Task { await coordinator.syncNow() }
                 }
             }
@@ -205,7 +267,7 @@ struct ContentView: View {
                         .foregroundStyle(.tint)
                 }
                 .keyboardShortcut("n")
-                .tint(.appAccent)
+                .tint(tint)
             }
             ToolbarItem {
                 Button {
@@ -214,7 +276,7 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape")
                         .foregroundStyle(.tint)
                 }
-                .tint(.appAccent)
+                .tint(tint)
             }
             #if os(iOS)
             // Drag handles appear in edit mode on iOS; macOS drags rows directly.
@@ -224,7 +286,7 @@ struct ContentView: View {
                     Button(editMode.isEditing ? "Done" : "Edit") {
                         withAnimation { editMode = editMode.isEditing ? .inactive : .active }
                     }
-                    .accentFilled()
+                    .accentFilled(tint)
                 }
             }
             #endif
@@ -241,6 +303,7 @@ struct ContentView: View {
         if let item = selectedItem {
             TodoDetailView(
                 item: item,
+                tint: tint,
                 onToggleDone: { try? store.complete(item, isDone: !item.isDone) },
                 onEdit: { sheet = .existing(item) },
                 onDelete: { delete(item) }
@@ -312,7 +375,58 @@ struct ContentView: View {
         }
     }
 
+    private var categoryMenu: some View {
+        CategoryMenu(
+            tree: tree,
+            counts: TodoFilter.dueCounts(items: items, tree: tree, now: .now, calendar: .current),
+            selection: Binding(get: { selection }, set: { setActive($0) }),
+            tint: tint,
+            onManage: { sheet = .categories }
+        )
+    }
+
+    private func filedBanner(_ banner: FiledBanner) -> some View {
+        HStack {
+            Text(banner.text)
+                .font(.callout)
+            Spacer()
+            Button("Show") {
+                setActive(banner.destination)
+                self.banner = nil
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.bar)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    /// Switches this device's active category. A selected item that the new category does not show is deselected.
+    private func setActive(_ newSelection: CategorySelection) {
+        activeCategoryID = newSelection.categoryID
+        ActiveCategoryStore().set(newSelection)
+        if let selectedItem, !TodoFilter.isInCategory(selectedItem, newSelection, tree: tree) {
+            selectedItemID = nil
+        }
+    }
+
+    /// After the editor saves: if the item is no longer in the list on screen, say where it went.
+    private func didSave(_ item: TodoItem, isNew: Bool) {
+        let tree = tree
+        guard !TodoFilter.isInCategory(item, selection, tree: tree) else { return }
+        let destination = tree.resolve(item.categoryId)
+        withAnimation {
+            banner = FiledBanner(
+                text: "\(isNew ? "Added to" : "Moved to") \(destination?.name ?? unassignedName)",
+                destination: CategorySelection(destination?.id)
+            )
+        }
+        if selectedItemID == item.id { selectedItemID = nil }
+    }
+
     /// Where a widget or control tap lands. An unknown item id (deleted since the widget last drew) is ignored.
+    /// `today` and `new` keep the active category; an item outside it switches to the item's own category first.
     private func open(_ link: DeepLink) {
         switch link {
         case .today:
@@ -322,6 +436,10 @@ struct ContentView: View {
             sheet = .new
         case .item(let id):
             guard let item = items.first(where: { $0.id == id }) else { return }
+            let tree = tree
+            if !TodoFilter.isInCategory(item, selection, tree: tree) {
+                setActive(CategorySelection(tree.resolve(item.categoryId)?.id))
+            }
             category = item.isDone ? .done : .active
             selectedItemID = id
         }
@@ -344,13 +462,13 @@ extension Color {
 }
 
 extension View {
-    /// A toolbar button filled with the accent colour, with white text. An iOS 26 toolbar ignores
-    /// `.borderedProminent` and needs the glass style; macOS takes the bordered one.
-    func accentFilled() -> some View {
+    /// A toolbar button filled with `tint` (the active category's colour), with white text. An iOS 26
+    /// toolbar ignores `.borderedProminent` and needs the glass style; macOS takes the bordered one.
+    func accentFilled(_ tint: Color) -> some View {
         #if os(iOS)
-        buttonStyle(.glassProminent).tint(.appAccent)
+        buttonStyle(.glassProminent).tint(tint)
         #else
-        buttonStyle(.borderedProminent).tint(.appAccent)
+        buttonStyle(.borderedProminent).tint(tint)
         #endif
     }
 }

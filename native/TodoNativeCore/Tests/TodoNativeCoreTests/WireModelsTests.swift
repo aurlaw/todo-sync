@@ -23,6 +23,12 @@ func workerAcceptsPushItem(_ json: [String: Any]) -> Bool {
         && json["updatedAt"] is String
         && json["isDeleted"] is Bool
         && isMissingNullOrNumber("sortOrder")
+        && isMissingNullOrLowercaseUUID(json["categoryId"])
+
+    func isMissingNullOrLowercaseUUID(_ value: Any?) -> Bool {
+        guard let value else { return true }
+        return value is NSNull || isLowercaseUUID(value)
+    }
 
     func isMissingNullOrNumber(_ key: String) -> Bool {
         guard let value = json[key] else { return true }
@@ -33,7 +39,13 @@ func workerAcceptsPushItem(_ json: [String: Any]) -> Bool {
     }
 }
 
-func jsonObject(_ dto: TodoWireDto) throws -> [String: Any] {
+/// Swift replica of `isLowercaseUuid` in worker/src/types.ts.
+func isLowercaseUUID(_ value: Any?) -> Bool {
+    guard let string = value as? String else { return false }
+    return string.wholeMatch(of: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) != nil
+}
+
+func jsonObject(_ dto: some Encodable) throws -> [String: Any] {
     let data = try JSONEncoder().encode(dto)
     return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
 }
@@ -66,7 +78,7 @@ struct WireModelsTests {
         #expect(response.rejected.last?.id == "unknown")
     }
 
-    @Test("encodes exactly the eleven camelCase keys, with explicit nulls and no dirty")
+    @Test("encodes exactly the twelve camelCase keys, with explicit nulls and no dirty")
     func encodesExactKeysWithNulls() throws {
         let item = TodoItem(
             title: "Buy milk",
@@ -78,8 +90,9 @@ struct WireModelsTests {
 
         #expect(Set(json.keys) == [
             "id", "title", "notes", "isDone", "dueAt", "recurrence",
-            "createdAt", "updatedAt", "isDeleted", "serverSeq", "sortOrder",
+            "createdAt", "updatedAt", "isDeleted", "serverSeq", "sortOrder", "categoryId",
         ])
+        #expect(json["categoryId"] is NSNull)
         #expect(json["notes"] is NSNull)
         #expect(json["dueAt"] is NSNull)
         #expect(json["recurrence"] is NSNull)

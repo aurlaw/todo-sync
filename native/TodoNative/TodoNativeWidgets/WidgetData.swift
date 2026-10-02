@@ -3,19 +3,33 @@ import SwiftUI
 import TodoNativeCore
 import WidgetKit
 
-/// Everything both widgets draw: the top of the Active list and the due-today count, as value copies.
+/// Everything both widgets draw, for this device's active category: the top of its Active list and its
+/// due-today count, as value copies.
 struct TodoEntry: TimelineEntry {
     /// Rows the biggest layout can show; the small ones just show fewer.
     static let maxRows = 8
 
     let date: Date
+    /// The active category's name, or "Unassigned".
+    let categoryName: String
+    /// The active category's custom colour (`#rrggbb`), nil for the app accent.
+    let colorHex: String?
     let items: [TodoSnapshot]
     let dueCount: Int
     /// Set when the shared store cannot be opened (the app has not run since the App Group was added).
     let problem: String?
 
+    /// Follows the widget's appearance: the stored colour in light mode, its derived variant in dark.
+    var tint: Color {
+        colorHex.flatMap(Color.init(categoryHex:)) ?? .accentColor
+    }
+
+    static let unassignedName = "Unassigned"
+
     static let sample = TodoEntry(
         date: .now,
+        categoryName: unassignedName,
+        colorHex: nil,
         items: [
             TodoSnapshot(id: UUID(), title: "Call the dentist", dueAt: .now.addingTimeInterval(-3_600), isOverdue: true),
             TodoSnapshot(id: UUID(), title: "Buy milk", dueAt: .now.addingTimeInterval(3_600), isOverdue: false),
@@ -50,18 +64,30 @@ struct TodoTimelineProvider: TimelineProvider {
             let context = ModelContext(container)
             let calendar = Calendar.current
             let tomorrow = TodoFilter.startOfTomorrow(after: now, calendar: calendar)
+            // The category the app is on; Unassigned if that one has been deleted.
+            let tree = try TodoQueries.categoryTree(in: context)
+            let selection = ActiveCategoryStore().effectiveSelection(in: tree)
+            let category = tree.resolve(selection.categoryID)
             return try [now, tomorrow].map { date in
                 TodoEntry(
                     date: date,
-                    items: try TodoQueries.active(in: context, now: date, limit: TodoEntry.maxRows),
-                    dueCount: try TodoQueries.dueTodayOrOverdueCount(in: context, now: date, calendar: calendar),
+                    categoryName: category?.name ?? TodoEntry.unassignedName,
+                    colorHex: category?.color,
+                    items: try TodoQueries.active(in: context, selection: selection, now: date, limit: TodoEntry.maxRows),
+                    dueCount: try TodoQueries.dueTodayOrOverdueCount(
+                        in: context, selection: selection, now: date, calendar: calendar
+                    ),
                     problem: nil
                 )
             }
         } catch TodoContainerError.storeNotReady {
-            return [TodoEntry(date: now, items: [], dueCount: 0, problem: "Open TodoNative once to finish setup.")]
+            return [problem("Open TodoNative once to finish setup.", at: now)]
         } catch {
-            return [TodoEntry(date: now, items: [], dueCount: 0, problem: "Couldn't read your todos.")]
+            return [problem("Couldn't read your todos.", at: now)]
         }
+    }
+
+    private func problem(_ message: String, at now: Date) -> TodoEntry {
+        TodoEntry(date: now, categoryName: "Todo", colorHex: nil, items: [], dueCount: 0, problem: message)
     }
 }

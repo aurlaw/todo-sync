@@ -4,6 +4,12 @@ import SwiftData
 public enum AppGroup {
     /// Shared by the app, the Share extension and (N7b) the widgets extension.
     public static let identifier = "group.com.aurlaw.todonative"
+
+    /// The group's shared defaults, for per-device settings an extension also reads (the active
+    /// category). Falls back to the standard suite if the group cannot be opened.
+    public static func defaults() -> UserDefaults {
+        UserDefaults(suiteName: identifier) ?? .standard
+    }
 }
 
 public enum TodoContainerError: Error, Equatable, Sendable {
@@ -15,7 +21,7 @@ public enum TodoContainerError: Error, Equatable, Sendable {
 }
 
 public enum TodoContainer {
-    private static var schema: Schema { Schema([TodoItem.self]) }
+    private static var schema: Schema { Schema([TodoItem.self, TodoCategory.self]) }
 
     /// The single source of truth for the SwiftData schema. Both the app and tests build
     /// their `ModelContainer` through this so they never drift.

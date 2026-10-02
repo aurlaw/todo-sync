@@ -20,7 +20,10 @@ public struct SyncOutcome: Equatable, Sendable {
 }
 
 /// One sync cycle: push dirty rows, then pull changes since the cursor and merge them
-/// (last-write-wins). Runs on its own `ModelContext`; the UI's context sees its saves.
+/// (last-write-wins). Categories go before todos in both directions, so a new category usually
+/// exists before an item that references it; nothing depends on that, since an item whose category
+/// has not arrived simply shows in Unassigned until it does. Runs on its own `ModelContext`; the
+/// UI's context sees its saves.
 public actor SyncEngine: ModelActor {
     public nonisolated let modelContainer: ModelContainer
     public nonisolated let modelExecutor: any ModelExecutor
@@ -84,7 +87,9 @@ public actor SyncEngine: ModelActor {
     private func runCycle() async throws -> SyncOutcome {
         let baseURL = try await client.baseURL()
         var outcome = SyncOutcome()
+        try await pushDirtyCategories(into: &outcome)
         try await pushDirty(into: &outcome)
+        try await pullCategories(baseURL: baseURL, into: &outcome)
         try await pull(baseURL: baseURL, into: &outcome)
         if outcome.applied > 0 {
             await onChangesApplied()
@@ -106,12 +111,16 @@ public actor SyncEngine: ModelActor {
 
             let response = try await client.push(chunk)
             try clearDirty(applied: response.applied, sent: chunk, into: &outcome)
-            for rejection in response.rejected {
-                if rejection.reason == "stale" {
-                    outcome.rejectedStale += 1
-                } else {
-                    outcome.rejectedInvalid += 1
-                }
+            count(response.rejected, into: &outcome)
+        }
+    }
+
+    private func count(_ rejected: [PushResponse.Rejected], into outcome: inout SyncOutcome) {
+        for rejection in rejected {
+            if rejection.reason == "stale" {
+                outcome.rejectedStale += 1
+            } else {
+                outcome.rejectedInvalid += 1
             }
         }
     }
@@ -179,6 +188,98 @@ public actor SyncEngine: ModelActor {
                 switch decision {
                 case .insert:
                     modelContext.insert(try dto.makeItem())
+                    outcome.applied += 1
+                case .apply:
+                    try dto.apply(to: local!)
+                    outcome.applied += 1
+                case .keepLocal, .ignore:
+                    break
+                }
+            } catch {
+                throw SyncError.invalidRow(String(describing: error))
+            }
+        }
+    }
+
+    // MARK: Categories
+
+    // The same push, compare-and-clear, pull and merge as todos, against `/categories/*` and the
+    // category cursor.
+
+    private func pushDirtyCategories(into outcome: inout SyncOutcome) async throws {
+        let dirty = try modelContext.fetch(FetchDescriptor<TodoCategory>(predicate: #Predicate { $0.dirty }))
+        let snapshots = dirty.map { CategoryWireDto($0) }
+        guard !snapshots.isEmpty else { return }
+
+        var start = 0
+        while start < snapshots.count {
+            let chunk = Array(snapshots[start..<min(start + pushChunkSize, snapshots.count)])
+            start += pushChunkSize
+
+            let response = try await client.pushCategories(chunk)
+            try clearDirtyCategories(applied: response.applied, sent: chunk, into: &outcome)
+            count(response.rejected, into: &outcome)
+        }
+    }
+
+    private func clearDirtyCategories(
+        applied: [PushResponse.Applied],
+        sent: [CategoryWireDto],
+        into outcome: inout SyncOutcome
+    ) throws {
+        let sentByID = Dictionary(sent.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for entry in applied {
+            guard let dto = sentByID[entry.id], let uuid = UUID(uuidString: entry.id) else { continue }
+            let matches = try modelContext.fetch(FetchDescriptor<TodoCategory>(predicate: #Predicate { $0.id == uuid }))
+            guard let category = matches.first, Iso8601.format(category.updatedAt) == dto.updatedAt else { continue }
+            category.dirty = false
+            category.serverSeq = entry.serverSeq
+            outcome.pushed += 1
+        }
+        try modelContext.save()
+    }
+
+    private func pullCategories(baseURL: URL, into outcome: inout SyncOutcome) async throws {
+        var cursor = cursors.categoryCursor(for: baseURL)
+        while true {
+            let page = try await client.categoryChanges(since: cursor, limit: pullPageSize)
+
+            do {
+                try apply(page.items, into: &outcome)
+                try modelContext.save()
+            } catch {
+                modelContext.rollback()
+                throw error
+            }
+            cursors.setCategoryCursor(page.cursor, for: baseURL)
+            outcome.pulled += page.items.count
+
+            if page.items.count < pullPageSize || page.cursor <= cursor { return }
+            cursor = page.cursor
+        }
+    }
+
+    private func apply(_ items: [CategoryWireDto], into outcome: inout SyncOutcome) throws {
+        var ids: [UUID] = []
+        for dto in items {
+            guard let uuid = UUID(uuidString: dto.id) else { throw SyncError.invalidRow("id \(dto.id)") }
+            ids.append(uuid)
+        }
+
+        let existing = try modelContext.fetch(FetchDescriptor<TodoCategory>(predicate: #Predicate { ids.contains($0.id) }))
+        let existingByID = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+
+        for (dto, uuid) in zip(items, ids) {
+            let local = existingByID[uuid]
+            let decision = MergeRules.decide(
+                localUpdatedAt: local.map { Iso8601.format($0.updatedAt) },
+                localDirty: local?.dirty ?? false,
+                incomingUpdatedAt: dto.updatedAt
+            )
+            do {
+                switch decision {
+                case .insert:
+                    modelContext.insert(try dto.makeCategory())
                     outcome.applied += 1
                 case .apply:
                     try dto.apply(to: local!)

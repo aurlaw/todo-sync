@@ -11,6 +11,8 @@ import TodoNativeCore
 /// Toolbar control: shows sync state and runs a sync when clicked (⌘R).
 struct SyncStatusButton: View {
     let status: SyncStatus
+    /// The active category's colour, used while idle.
+    let accent: Color
     let action: () -> Void
 
     var body: some View {
@@ -38,7 +40,7 @@ struct SyncStatusButton: View {
     /// Set on the button itself, because an iOS toolbar ignores a colour set on the label.
     private var tint: Color? {
         switch status {
-        case .idle: .appAccent
+        case .idle: accent
         case .failed: .red
         case .syncing, .notConfigured: nil
         }

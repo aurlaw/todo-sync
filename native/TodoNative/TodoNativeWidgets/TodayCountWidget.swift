@@ -12,7 +12,7 @@ struct TodayCountWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Due Today")
-        .description("How many todos are due today or overdue. Tap to open Today.")
+        .description("How many todos in the category the app is on are due today or overdue. Tap to open Today.")
         .supportedFamilies(Self.families)
     }
 
@@ -44,8 +44,9 @@ struct TodayCountView: View {
             }
         case .accessoryRectangular:
             VStack(alignment: .leading) {
-                Text("Due today")
+                Text(entry.categoryName)
                     .font(.headline)
+                    .lineLimit(1)
                 Text(summary)
                     .font(.caption)
             }
@@ -53,8 +54,9 @@ struct TodayCountView: View {
         #endif
         default:
             VStack(alignment: .leading, spacing: 4) {
-                Label("Today", systemImage: "sun.max")
+                Label(entry.categoryName, systemImage: "sun.max")
                     .font(.headline)
+                    .lineLimit(1)
                     .foregroundStyle(.tint)
                 Spacer(minLength: 0)
                 if let problem = entry.problem {
@@ -70,6 +72,7 @@ struct TodayCountView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .tint(entry.tint)
         }
     }
 

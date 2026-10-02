@@ -78,6 +78,35 @@ struct URLSessionSyncClientTests {
         #expect(changes.items.count == 3)
     }
 
+    @Test("category calls go to /categories/push and /categories/changes with the same auth and body shape")
+    func categoryRequests() async throws {
+        let client = makeClient(MemorySecretStore(baseURL: "https://worker.test/api/"))
+        StubURLProtocol.handler = { request in
+            (200, request.httpMethod == "POST" ? self.emptyPush : self.emptyChanges)
+        }
+
+        _ = try await client.pushCategories([categoryWire(name: "Work", updatedAt: at(1))])
+        _ = try await client.categoryChanges(since: 7, limit: 500)
+
+        let push = try #require(StubURLProtocol.recorded.first)
+        #expect(push.request.httpMethod == "POST")
+        #expect(push.request.url?.path == "/api/categories/push")
+        #expect(push.request.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+        let data = try #require(push.body)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let items = try #require(body["items"] as? [[String: Any]])
+        #expect(items.count == 1)
+        #expect(items[0]["name"] as? String == "Work")
+        #expect(items[0]["parentId"] is NSNull)
+
+        let changes = try #require(StubURLProtocol.recorded.last?.request)
+        #expect(changes.httpMethod == "GET")
+        let components = URLComponents(url: try #require(changes.url), resolvingAgainstBaseURL: false)
+        #expect(components?.path == "/api/categories/changes")
+        #expect(components?.queryItems?.first { $0.name == "since" }?.value == "7")
+        #expect(components?.queryItems?.first { $0.name == "limit" }?.value == "500")
+    }
+
     @Test("maps 401 to unauthorized, 5xx to http, and a bad body to decoding")
     func errorMapping() async throws {
         let client = makeClient()

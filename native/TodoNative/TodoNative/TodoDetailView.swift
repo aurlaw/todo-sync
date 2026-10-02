@@ -10,6 +10,7 @@ import TodoNativeCore
 
 struct TodoDetailView: View {
     let item: TodoItem
+    let tint: Color
     let onToggleDone: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -49,7 +50,7 @@ struct TodoDetailView: View {
         .toolbar {
             ToolbarItem {
                 Button("Edit", action: onEdit)
-                    .accentFilled()
+                    .accentFilled(tint)
             }
         }
     }

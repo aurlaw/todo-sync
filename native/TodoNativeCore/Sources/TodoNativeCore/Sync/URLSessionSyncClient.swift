@@ -36,6 +36,22 @@ public struct URLSessionSyncClient: SyncClient {
         return try await send(request, as: ChangesResponse.self)
     }
 
+    public func pushCategories(_ items: [CategoryWireDto]) async throws -> PushResponse {
+        var request = try await makeRequest(path: "categories/push", method: "POST")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(CategoryPushRequest(items: items))
+        return try await send(request, as: PushResponse.self)
+    }
+
+    public func categoryChanges(since: Int64, limit: Int) async throws -> CategoryChangesResponse {
+        let request = try await makeRequest(
+            path: "categories/changes",
+            method: "GET",
+            query: [URLQueryItem(name: "since", value: String(since)), URLQueryItem(name: "limit", value: String(limit))]
+        )
+        return try await send(request, as: CategoryChangesResponse.self)
+    }
+
     private func secret(_ key: SecretKey) throws -> String {
         do {
             return try secrets.get(key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

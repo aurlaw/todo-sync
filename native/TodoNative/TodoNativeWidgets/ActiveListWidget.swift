@@ -12,7 +12,7 @@ struct ActiveListWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Active Todos")
-        .description("Your open todos in the order you set. Tap the circle to complete one.")
+        .description("The open todos of the category the app is on, in the order you set. Tap the circle to complete one.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
@@ -26,8 +26,9 @@ struct ActiveListView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Active")
+            Text(entry.categoryName)
                 .font(.headline)
+                .lineLimit(1)
                 .foregroundStyle(.tint)
 
             if let problem = entry.problem {
@@ -52,6 +53,7 @@ struct ActiveListView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .tint(entry.tint)
     }
 }
 

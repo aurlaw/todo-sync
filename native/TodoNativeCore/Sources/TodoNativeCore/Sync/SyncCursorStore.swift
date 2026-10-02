@@ -7,6 +7,10 @@ public struct SyncCursorStore: @unchecked Sendable {
     private let defaults: UserDefaults
     private let urlKey = "todonative.sync.cursorBaseURL"
     private let valueKey = "todonative.sync.cursorValue"
+    // `/categories/changes` has its own cursor. It carries its own URL key too, so it can never be
+    // read as belonging to a Worker it was not issued by.
+    private let categoryURLKey = "todonative.sync.categoryCursorBaseURL"
+    private let categoryValueKey = "todonative.sync.categoryCursorValue"
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -22,8 +26,21 @@ public struct SyncCursorStore: @unchecked Sendable {
         defaults.set(Int(cursor), forKey: valueKey)
     }
 
+    public func categoryCursor(for baseURL: URL) -> Int64 {
+        guard defaults.string(forKey: categoryURLKey) == baseURL.absoluteString else { return 0 }
+        return Int64(defaults.integer(forKey: categoryValueKey))
+    }
+
+    public func setCategoryCursor(_ cursor: Int64, for baseURL: URL) {
+        defaults.set(baseURL.absoluteString, forKey: categoryURLKey)
+        defaults.set(Int(cursor), forKey: categoryValueKey)
+    }
+
+    /// Clears both cursors.
     public func reset() {
         defaults.removeObject(forKey: urlKey)
         defaults.removeObject(forKey: valueKey)
+        defaults.removeObject(forKey: categoryURLKey)
+        defaults.removeObject(forKey: categoryValueKey)
     }
 }

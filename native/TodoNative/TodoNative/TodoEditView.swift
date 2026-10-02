@@ -13,7 +13,13 @@ struct TodoEditView: View {
 
     let store: TodoStore
     let item: TodoItem?
+    let tree: CategoryTree
+    /// Called after a successful save with the item and whether it is new.
+    let onSaved: (TodoItem, Bool) -> Void
 
+    /// What the category picker showed when the sheet opened: an existing item's resolved category.
+    private let originalCategoryID: UUID?
+    @State private var categoryID: UUID?
     @State private var title: String
     @State private var notes: String
     @State private var hasDueDate: Bool
@@ -22,9 +28,21 @@ struct TodoEditView: View {
     @State private var frequency: Frequency
     @State private var interval: Int
 
-    init(store: TodoStore, item: TodoItem?) {
+    /// A new item starts in `defaultCategoryID` (the active category); an existing one shows its own.
+    init(
+        store: TodoStore,
+        item: TodoItem?,
+        tree: CategoryTree,
+        defaultCategoryID: UUID?,
+        onSaved: @escaping (TodoItem, Bool) -> Void
+    ) {
         self.store = store
         self.item = item
+        self.tree = tree
+        self.onSaved = onSaved
+        let shown = item.map { tree.resolve($0.categoryId)?.id } ?? defaultCategoryID
+        originalCategoryID = shown
+        _categoryID = State(initialValue: shown)
         _title = State(initialValue: item?.title ?? "")
         _notes = State(initialValue: item?.notes ?? "")
         _hasDueDate = State(initialValue: item?.dueAt != nil)
@@ -45,6 +63,15 @@ struct TodoEditView: View {
                 Section("Notes") {
                     TextEditor(text: $notes)
                         .frame(minHeight: 120)
+                }
+
+                Section {
+                    Picker("Category", selection: $categoryID) {
+                        Text(unassignedName).tag(UUID?.none)
+                        ForEach(tree.flattened, id: \.category.id) { entry in
+                            Text(tree.pickerTitle(for: entry.category)).tag(UUID?.some(entry.category.id))
+                        }
+                    }
                 }
 
                 Section {
@@ -101,9 +128,19 @@ struct TodoEditView: View {
 
         do {
             if let item {
-                try store.update(item, title: title, notes: resolvedNotes, dueAt: resolvedDueAt, recurrence: resolvedRecurrence)
+                // An untouched picker keeps the stored id as it is, even one that no longer resolves.
+                let resolvedCategoryID = categoryID == originalCategoryID ? item.categoryId : categoryID
+                try store.update(
+                    item, title: title, notes: resolvedNotes, dueAt: resolvedDueAt,
+                    recurrence: resolvedRecurrence, categoryId: resolvedCategoryID
+                )
+                onSaved(item, false)
             } else {
-                try store.create(title: title, notes: resolvedNotes, dueAt: resolvedDueAt, recurrence: resolvedRecurrence)
+                let created = try store.create(
+                    title: title, notes: resolvedNotes, dueAt: resolvedDueAt,
+                    recurrence: resolvedRecurrence, categoryId: categoryID
+                )
+                onSaved(created, true)
             }
             dismiss()
         } catch {

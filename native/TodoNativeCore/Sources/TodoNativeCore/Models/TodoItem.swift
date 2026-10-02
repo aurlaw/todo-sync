@@ -17,6 +17,9 @@ public final class TodoItem {
     /// Manual list order, ascending. Fractional keys: a move sets one row to the midpoint of its new
     /// neighbours. The declaration-site default is what lets SwiftData add the column to an existing store.
     public var sortOrder: Double = 0
+    /// The category this item is filed under; nil is the virtual Unassigned category. Whether the id
+    /// still names a live category is `CategoryTree.resolve`'s call, not this property's.
+    public var categoryId: UUID? = nil
 
     /// Only `TodoStore` should call this directly — it does not set `updatedAt`/`dirty`,
     /// which is `TodoStore`'s job on every mutation. See `TodoStore` for the enforced writes.
@@ -32,7 +35,8 @@ public final class TodoItem {
         isSoftDeleted: Bool = false,
         dirty: Bool = true,
         serverSeq: Int64? = nil,
-        sortOrder: Double = 0
+        sortOrder: Double = 0,
+        categoryId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -46,6 +50,7 @@ public final class TodoItem {
         self.dirty = dirty
         self.serverSeq = serverSeq
         self.sortOrder = sortOrder
+        self.categoryId = categoryId
     }
 }
 

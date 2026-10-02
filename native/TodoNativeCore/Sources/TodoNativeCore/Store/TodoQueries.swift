@@ -29,22 +29,38 @@ public struct TodoSnapshot: Equatable, Sendable, Identifiable {
 /// Read-only queries for surfaces outside the main list (the widgets). Takes the caller's context; on the
 /// widget side that is a context on the App Group store.
 public enum TodoQueries {
-    /// The Active list in the app's manual order (`TodoItem.manualOrder`), optionally cut to the first `limit` rows.
-    public static func active(in context: ModelContext, now: Date = .now, limit: Int? = nil) throws -> [TodoSnapshot] {
+    /// The category tree as stored in `context`.
+    public static func categoryTree(in context: ModelContext) throws -> CategoryTree {
+        CategoryTree(try context.fetch(FetchDescriptor<TodoCategory>()))
+    }
+
+    /// The Active list of one category in the app's manual order (`TodoItem.manualOrder`), optionally cut
+    /// to the first `limit` rows.
+    public static func active(
+        in context: ModelContext,
+        selection: CategorySelection = .unassigned,
+        now: Date = .now,
+        limit: Int? = nil
+    ) throws -> [TodoSnapshot] {
+        let tree = try categoryTree(in: context)
         let items = try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { !$0.isSoftDeleted }))
+            .filter { TodoFilter.isInCategory($0, selection, tree: tree) }
             .filter(TodoFilter.isActive)
             .sorted(by: TodoItem.manualOrder)
         let shown = limit.map { Array(items.prefix($0)) } ?? items
         return shown.map { TodoSnapshot($0, now: now) }
     }
 
-    /// How many open items are due today or overdue: the same rule as the Today list.
+    /// How many open items of one category are due today or overdue: the same rule as the Today list.
     public static func dueTodayOrOverdueCount(
         in context: ModelContext,
+        selection: CategorySelection = .unassigned,
         now: Date = .now,
         calendar: Calendar = .current
     ) throws -> Int {
-        try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { !$0.isSoftDeleted }))
+        let tree = try categoryTree(in: context)
+        return try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { !$0.isSoftDeleted }))
+            .filter { TodoFilter.isInCategory($0, selection, tree: tree) }
             .filter { TodoFilter.isDueTodayOrOverdue($0, now: now, calendar: calendar) }
             .count
     }

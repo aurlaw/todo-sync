@@ -13,6 +13,8 @@ struct SettingsView: View {
     @Environment(SyncCoordinator.self) private var coordinator
 
     let secrets: any SecretStore
+    /// Replaces this sheet with the category manager.
+    let onManageCategories: () -> Void
 
     @State private var baseURL = ""
     @State private var token = ""
@@ -40,6 +42,10 @@ struct SettingsView: View {
                     }
                 } footer: {
                     Text("Pulls everything from the server again using the saved URL and token. Local changes are pushed first and kept.")
+                }
+
+                Section {
+                    Button("Manage Categories…", action: onManageCategories)
                 }
 
                 if let errorMessage {
