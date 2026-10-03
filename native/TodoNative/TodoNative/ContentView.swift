@@ -99,9 +99,20 @@ struct ContentView: View {
     /// `selection` is what is actually shown.
     @State private var activeCategoryID: UUID? = ActiveCategoryStore().storedID
     @State private var banner: FiledBanner?
+    /// The inline add row at the bottom of Active: a session is open, and the text typed so far.
+    @State private var isAdding = false
+    @State private var draft = ""
+    @FocusState private var addFieldFocused: Bool
+    /// Set for a moment after Return saves, so a keyboard that drops focus on submit gets it back
+    /// instead of ending the session.
+    @State private var refocusAfterSubmit = false
+    /// Bumped to scroll the add row into view.
+    @State private var addRowScrollTick = 0
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
     #endif
+
+    private static let addRowID = "inline-add-row"
 
     private let secrets: any SecretStore = KeychainStore()
 
@@ -153,6 +164,16 @@ struct ContentView: View {
         }
     }
 
+    /// The add row is in Active only, and (iOS) not while the drag handles are showing.
+    private var showsAddRow: Bool {
+        guard (category ?? .active) == .active else { return false }
+        #if os(iOS)
+        return !editMode.isEditing
+        #else
+        return true
+        #endif
+    }
+
     private var selectedItem: TodoItem? {
         guard let selectedItemID else { return nil }
         return items.first { $0.id == selectedItemID }
@@ -168,7 +189,21 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active { coordinator.handleActive() }
+            if phase == .background { finishAdding() }
         }
+        // Here, not on the list: on an iPhone the list is gone by the time the sidebar changes.
+        .onChange(of: category) { finishAdding() }
+        #if os(macOS)
+        // ⌘N: an inline session in Active, the editor sheet everywhere else. The toolbar's "+"
+        // always opens the sheet, so the shortcut needs a button of its own.
+        .background {
+            Button("New Todo", action: newFromShortcut)
+                .keyboardShortcut("n")
+                .opacity(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        #endif
         .onOpenURL { url in
             if let link = DeepLink(url: url) { open(link) }
         }
@@ -202,12 +237,32 @@ struct ContentView: View {
     }
 
     private var itemList: some View {
-        List(selection: $selectedItemID) {
-            ForEach(visibleItems) { item in
-                row(for: item)
-                    .tag(item.id)
+        ScrollViewReader { proxy in
+            List(selection: $selectedItemID) {
+                ForEach(visibleItems) { item in
+                    row(for: item)
+                        .tag(item.id)
+                }
+                .onMove(perform: moveAction)
+                // After the `ForEach`, untagged: never draggable, never selectable.
+                if showsAddRow {
+                    addRow
+                        .id(Self.addRowID)
+                        .selectionDisabled()
+                }
             }
-            .onMove(perform: moveAction)
+            .onChange(of: addRowScrollTick) {
+                withAnimation { proxy.scrollTo(Self.addRowID, anchor: .bottom) }
+            }
+        }
+        .onChange(of: addFieldFocused) { _, focused in
+            guard !focused else { return }
+            if refocusAfterSubmit {
+                refocusAfterSubmit = false
+                addFieldFocused = true
+            } else {
+                finishAdding()
+            }
         }
         .navigationTitle((category ?? .active).title)
         #if os(iOS)
@@ -218,7 +273,8 @@ struct ContentView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .overlay {
-            if visibleItems.isEmpty {
+            // Not over the add row: an empty category is exactly where several items get added.
+            if visibleItems.isEmpty && !showsAddRow {
                 ContentUnavailableView("Nothing here", systemImage: "checklist")
             }
         }
@@ -266,7 +322,9 @@ struct ContentView: View {
                     Label("New", systemImage: "plus")
                         .foregroundStyle(.tint)
                 }
+                #if os(iOS)
                 .keyboardShortcut("n")
+                #endif
                 .tint(tint)
             }
             ToolbarItem {
@@ -284,6 +342,7 @@ struct ContentView: View {
                 // Not `EditButton`: it ignores button styles in an iOS 26 toolbar, so it can't be filled.
                 ToolbarItem {
                     Button(editMode.isEditing ? "Done" : "Edit") {
+                        finishAdding()
                         withAnimation { editMode = editMode.isEditing ? .inactive : .active }
                     }
                     .accentFilled(tint)
@@ -367,6 +426,92 @@ struct ContentView: View {
         }
     }
 
+    /// "New todo…" until tapped, then a field that saves on Return and stays focused for the next one.
+    private var addRow: some View {
+        HStack {
+            Image(systemName: "plus.circle")
+                .foregroundStyle(.secondary)
+            if isAdding {
+                TextField("New todo…", text: $draft)
+                    .textFieldStyle(.plain)
+                    .focused($addFieldFocused)
+                    .submitLabel(.next)
+                    .onSubmit(submitDraft)
+                    #if os(macOS)
+                    .onExitCommand(perform: endAdding)
+                    #endif
+                    // The field only exists once the session starts, so focus is set after it appears.
+                    .task { addFieldFocused = true }
+            } else {
+                Button(action: beginAdding) {
+                    Text("New todo…")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func beginAdding() {
+        if isAdding {
+            addFieldFocused = true
+        } else {
+            isAdding = true
+        }
+        addRowScrollTick += 1
+    }
+
+    #if os(macOS)
+    private func newFromShortcut() {
+        if showsAddRow {
+            beginAdding()
+        } else {
+            sheet = .new
+        }
+    }
+    #endif
+
+    /// Return: save and stay in the field for the next one, or end the session on an empty field.
+    private func submitDraft() {
+        switch InlineAdd.submit(draft) {
+        case .save(let title):
+            // On a failed save the text stays in the field.
+            guard saveInline(title) else { return }
+            draft = ""
+            refocusAfterSubmit = true
+            addFieldFocused = true
+            addRowScrollTick += 1
+            Task {
+                try? await Task.sleep(for: .milliseconds(250))
+                refocusAfterSubmit = false
+            }
+        case .end:
+            endAdding()
+        }
+    }
+
+    /// Focus left the field, or the list is changing under it: save what was typed, then end.
+    /// Only Escape discards.
+    private func finishAdding() {
+        guard isAdding else { return }
+        if case .save(let title) = InlineAdd.submit(draft), !saveInline(title) { return }
+        endAdding()
+    }
+
+    private func endAdding() {
+        isAdding = false
+        draft = ""
+        refocusAfterSubmit = false
+        addFieldFocused = false
+    }
+
+    /// Same category the editor preselects for a new item: the active one.
+    private func saveInline(_ title: String) -> Bool {
+        (try? store.create(title: title, categoryId: selection.categoryID)) != nil
+    }
+
     /// `nil` switches drag-to-reorder off for the lists that aren't manually ordered.
     private var moveAction: ((IndexSet, Int) -> Void)? {
         guard canReorder else { return nil }
@@ -404,6 +549,8 @@ struct ContentView: View {
 
     /// Switches this device's active category. A selected item that the new category does not show is deselected.
     private func setActive(_ newSelection: CategorySelection) {
+        // First, so a half-typed item is filed under the category it was typed in.
+        finishAdding()
         activeCategoryID = newSelection.categoryID
         ActiveCategoryStore().set(newSelection)
         if let selectedItem, !TodoFilter.isInCategory(selectedItem, newSelection, tree: tree) {
